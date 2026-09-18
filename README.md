@@ -120,11 +120,11 @@ points are pairwise within distance $\epsilon$:
 
 $$
 K_\epsilon=
-\left\{
+\{
 \sigma\subseteq X \;\big|\;
 d(x,y)\leq\epsilon,
 \quad \forall x,y\in\sigma
-\right\}.
+\}.
 $$
 
 As $\epsilon$ increases, simplices are added but never removed, giving rise to a filtration
@@ -137,7 +137,7 @@ vertices: a vertex is a 0-simplex, an edge is a 1-simplex, and a triangle is a 2
 The $p$-chain group is the $\mathbb F$-vector space spanned by the $p$-simplices:
 $
 C_p(K_\epsilon)
-=\operatorname{span}_{\mathbb{F}}
+=\mathrm{span}_{\mathbb{F}}
 \{[v_0,\ldots,v_p]\in K_\epsilon\},
 $
 with the boundary map $\partial_p:C_p\rightarrow C_{p-1}$
@@ -151,7 +151,7 @@ $$
 The $p$-th homology group is
 $
 H_p(K_\epsilon)
-=\ker\partial_p\big/\operatorname{im}\partial_{p+1}
+=\ker\partial_p / \mathrm{im}\,\partial_{p+1}
 $ and its dimension is the $p$-th Betti number
 $
 \beta_p^{(\epsilon)}=\dim H_p(K_\epsilon).
@@ -164,7 +164,7 @@ follow homology classes across the filtration: classes are born when they first
 appear and die when they become trivial at a later scale.
 
 The persistent homology group is
-$H_p^{i\to j}=\operatorname{im}(\iota^{i\to j}_*)$, containing classes present at scale
+$H_p^{i\to j}=\mathrm{im}(\iota^{i\to j}_*)$, containing classes present at scale
 $\epsilon_i$ that survive to $\epsilon_j$. Its dimension,
 
 $$\beta_p^{i\to j}=\dim H_p^{i\to j},$$
@@ -293,7 +293,7 @@ $$
 Then its square restricted to $C_p$ is the Hodge-Laplacian,
 
 $$
-\left.B_p^2\right|_{C_p}=L_p.
+B_p^2|_{C_p}=L_p.
 $$
 
 
@@ -322,7 +322,7 @@ $$
 \mathcal H=\bigoplus_p \mathcal H_p,
 \qquad
 \mathcal H_p
-=\operatorname{span}\{
+=\mathrm{span}\{
 |z\rangle:|z|=p+1
 \}.
 $$
@@ -333,7 +333,7 @@ subspace
 
 $$
 \mathcal H_{C_p}
-=\operatorname{span}\{
+=\mathrm{span}\{
 |\sigma\rangle:\sigma\in C_p(K_\epsilon)
 \}
 \subseteq\mathcal H_p,
@@ -365,7 +365,7 @@ zero-phase result is
 
 $$
 \Pr(\phi=0)
-=\operatorname{Tr}\bigl(\Pi_{\mathrm{harm},p}\rho_p\bigr)
+=\mathrm{Tr}(\Pi_{\mathrm{harm},p}\rho_p)
 =\frac{\beta_p}{|C_p|}.
 $$
 
@@ -437,7 +437,7 @@ We construct $\rho_p$ in three steps.
    \sum_{\sigma\in C_p}|\sigma\rangle_S|\sigma\rangle_R.
    $$
 
-   Tracing out $R$ gives $\rho_p=\operatorname{Tr}_R
+   Tracing out $R$ gives $\rho_p=\mathrm{Tr}_R
    (|\Phi_p\rangle\langle\Phi_p|)$.
 
 ### Step two: Quantum Phase Estimation
@@ -468,7 +468,7 @@ Since we are not exploiting sparseness here, the code uses both $B_p$ and $L_p$.
    \widetilde L_{p,S}=\sum_\alpha c_\alpha P_\alpha,
    \qquad
    c_\alpha=\frac{1}{2^n}
-   \operatorname{Tr}\bigl(\widetilde L_{p,S}P_\alpha\bigr),
+   \mathrm{Tr}(\widetilde L_{p,S}P_\alpha),
    \qquad
    P_\alpha\in\{I,X,Y,Z\}^{\otimes n},
    $$
@@ -478,9 +478,9 @@ Since we are not exploiting sparseness here, the code uses both $B_p$ and $L_p$.
    $$
    U(t)=e^{-it\widetilde L_{p,S}}
    \approx
-   \left(
+   (
    \prod_\alpha e^{-i(t/r)c_\alpha P_\alpha}
-   \right)^r.
+   )^r.
    $$
 
 3. **Run QPE and count zero modes.** Apply QPE to $U(t)$ and measure the
