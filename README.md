@@ -131,7 +131,7 @@ As $\epsilon$ increases, simplices are added but never removed, giving rise to a
 
 A $p$-simplex $\sigma=[v_0,\ldots,v_p]\in K_\epsilon$ contains $p+1$
 vertices: a vertex is a 0-simplex, an edge is a 1-simplex, and a triangle is a 2-simplex.
-The $p$-chain group is the $\mathbb F$-vector space spanned by the $p$-simplices: $C_p(K_\epsilon)=\mathrm{span}_{\mathbb{F}}\left\lbrace[v_0,\ldots,v_p]\in K_\epsilon\right\rbrace$, with the boundary map $\partial_p:C_p\rightarrow C_{p-1}$
+The $p$-chain group is the $\mathbb F$-vector space spanned by the $p$-simplices: $`C_p(K_\epsilon)=\mathrm{span}_{\mathbb{F}}\left\lbrace[v_0,\ldots,v_p]\in K_\epsilon\right\rbrace`$, with the boundary map $\partial_p:C_p\rightarrow C_{p-1}$
 
 $$
 \partial_p[v_0,\ldots,v_p]
