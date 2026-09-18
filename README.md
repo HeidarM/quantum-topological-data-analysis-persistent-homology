@@ -131,7 +131,7 @@ As $\epsilon$ increases, simplices are added but never removed, giving rise to a
 
 A $p$-simplex $\sigma=[v_0,\ldots,v_p]\in K_\epsilon$ contains $p+1$
 vertices: a vertex is a 0-simplex, an edge is a 1-simplex, and a triangle is a 2-simplex.
-The $p$-chain group is the $\mathbb F$-vector space spanned by the $p$-simplices: $C_p(K_\epsilon)=\mathrm{span}_{\mathbb{F}}\{[v_0,\ldots,v_p]\in K_\epsilon\}$, with the boundary map $\partial_p:C_p\rightarrow C_{p-1}$
+The $p$-chain group is the $\mathbb F$-vector space spanned by the $p$-simplices: $`C_p(K_\epsilon)=\mathrm{span}_{\mathbb{F}}\{[v_0,\ldots,v_p]\in K_\epsilon\}`$, with the boundary map $\partial_p:C_p\rightarrow C_{p-1}$
 
 $$
 \partial_p[v_0,\ldots,v_p]
@@ -223,13 +223,13 @@ For the Hodge-Laplacian and the quantum algorithm, we use real chain spaces ($\m
 with oriented simplices as an orthonormal basis. At a fixed scale $\epsilon$,
 the $p$-th combinatorial Hodge-Laplacian is
 
-$$
+```math
 L_p
 =\partial_p^\dagger\partial_p
 +\partial_{p+1}\partial_{p+1}^\dagger,
 \qquad
 L_p:C_p\rightarrow C_p.
-$$
+```
 The vectors in $\ker L_p$ are the
 harmonic $p$-chains and are unique representatives of homology classes. Hodge theory gives
 
@@ -243,7 +243,7 @@ A useful operator in the quantum algorithm is the Dirac operator that
 combines all boundary maps into one Hermitian operator on the graded chain
 space $C=\bigoplus_p C_p$: $B=\partial+\partial^\dagger$.
 
-$$
+```math
 B=
 \begin{pmatrix}
  & \partial_1 &  &  &  \\
@@ -252,7 +252,7 @@ B=
  &  & \ddots &  & \partial_n \\
  &  &  & \partial_n^\dagger &
 \end{pmatrix}.
-$$
+```
 Because $\partial^2=0$, its square is block diagonal, $B^2=\bigoplus_p L_p$.
 
 If we are interested only in $L_p$, we only need the part of $B$ acting on
@@ -357,62 +357,62 @@ $$
 We construct $\rho_p$ in three steps.
 
 1. **Prepare the Dicke state.** The circuit $A$ prepares the uniform
-   Hamming-weight-$p+1$ state
+   Hamming-weight-$`p+1`$ state
 
-   $$
+   ```math
    A|0\cdots0\rangle=|u_p\rangle
    =\frac{1}{\sqrt{\binom{n}{p+1}}}
    \sum_{|z|=p+1}|z\rangle.
-   $$
+   ```
 
 
 
 2. **Amplify $|C_p\rangle$.** We want to prepare the state
 
-   $$
+   ```math
    |C_p\rangle
    =\frac{1}{\sqrt{|C_p|}}
    \sum_{\sigma\in C_p}|\sigma\rangle,
-   $$
+   ```
    however our current state decomposes as
 
-   $$
+   ```math
    |u_p\rangle
    =\sqrt{\zeta}\,|C_p\rangle
    +\sqrt{1-\zeta}\,|C_p^\perp\rangle.
-   $$
+   ```
    We need to use Grover-like amplitude amplification to increase $\zeta$.
    The reflections and amplification operator are
 
-   $$
+   ```math
    R_{C_p}|z\rangle
    =(-1)^{\chi_{C_p}(z)}|z\rangle,
    \qquad
    R_{u_p}=2|u_p\rangle\langle u_p|-I,
    \qquad
    Q=R_{u_p}R_{C_p},
-   $$
+   ```
 
    where $\chi_{C_p}(z)=1$ when $|z\rangle$ encodes a simplex in $C_p$, and
    is $0$ otherwise.
 
    After $r$ iterations,
 
-   $$
+   ```math
    Q^rA|0\cdots0\rangle\approx|C_p\rangle.
-   $$
+   ```
    The initial good-state probability is $\zeta=\frac{|C_p|}{\binom{n}{p+1}}$, from which we estimate the number of iterations $r$.
 
 3. **Create the mixed state.** Introduce a reference register in $|0\rangle_R^{\otimes n}$
    and apply CNOTs:
 
-   $$
+   ```math
    |C_p\rangle_S|0\rangle_R^{\otimes n}
    \longrightarrow
    |\Phi_p\rangle_{SR}
    =\frac{1}{\sqrt{|C_p|}}
    \sum_{\sigma\in C_p}|\sigma\rangle_S|\sigma\rangle_R.
-   $$
+   ```
 
    Tracing out $R$ gives $\rho_p=\mathrm{Tr}_R(|\Phi_p\rangle\langle\Phi_p|)$.
 
@@ -432,37 +432,37 @@ Since we are not exploiting sparseness here, the code uses both $B_p$ and $L_p$.
    basis of valid $p$-simplices. QPE needs an operator on all $n$ qubits of the
    simplex register, so we embed it in the $2^n$-dimensional space:
 
-   $$
+   ```math
    \widetilde L_{p,S}
    =\sum_{\sigma_i,\sigma_j\in C_p}
    (L_p)_{ij}|\sigma_i\rangle\langle\sigma_j|.
-   $$
+   ```
 
 2. **Construct $U(t)$.** Decompose the embedded operator into Pauli strings,
 
-   $$
+   ```math
    \widetilde L_{p,S}=\sum_\alpha c_\alpha P_\alpha,
    \qquad
    c_\alpha=\frac{1}{2^n}
    \mathrm{Tr}(\widetilde L_{p,S}P_\alpha),
    \qquad
    P_\alpha\in\{I,X,Y,Z\}^{\otimes n},
-   $$
+   ```
 
    then construct its time evolution by Trotterization:
 
-   $$
+   ```math
    U(t)=e^{-it\widetilde L_{p,S}}
    \approx
    (
    \prod_\alpha e^{-i(t/r)c_\alpha P_\alpha}
    )^r.
-   $$
+   ```
 
 3. **Run QPE and count zero modes.** Apply QPE to $U(t)$ and measure the
    phase register. The harmonic states have eigenvalue $0$ and therefore give
    phase $0$. If $N_0$ of $N$ measurements give the all-zero phase,
 
-   $$
+   ```math
    \beta_p\approx|C_p|\frac{N_0}{N}.
-   $$
+   ```
