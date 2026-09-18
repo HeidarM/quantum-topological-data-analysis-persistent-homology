@@ -53,8 +53,6 @@ python -m scripts.classical_hodge_laplacian_betti
 ~~~
 
 ~~~text
-eigenvalues(L_1) = [-0.    0.    0.38  0.5   1.27  1.38  1.78  2.    2.    2.62  3.    3.22
-  3.62  4.    4.    4.    4.    4.5   4.73]
 beta_1 = dim ker(L_1) = 2
 
 zero mode 1 in the C_1(K_epsilon) basis
