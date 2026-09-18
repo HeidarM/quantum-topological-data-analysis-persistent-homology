@@ -112,7 +112,7 @@ classical beta_1 = dim ker L_1 = 1
 We start from a point cloud from a dataset
 
 $$
-X=\{x_0,\ldots,x_{n-1}\}\subset\mathbb{R}^d.
+X=\lbrace x_0,\ldots,x_{n-1}\rbrace\subset\mathbb{R}^d.
 $$
 
 At scale $\epsilon$, the Vietoris-Rips complex contains every simplex whose
@@ -120,18 +120,18 @@ points are pairwise within distance $\epsilon$:
 
 $$
 K_\epsilon=
-\left\{
+\left\lbrace
 \sigma\subseteq X \;\big|\;
 d(x,y)\leq\epsilon,
 \quad \forall x,y\in\sigma
-\right\}.
+\right\rbrace.
 $$
 
 As $\epsilon$ increases, simplices are added but never removed, giving rise to a filtration $K_{\epsilon_0}\subseteq \cdots \subseteq K_{\epsilon_m}$.
 
 A $p$-simplex $\sigma=[v_0,\ldots,v_p]\in K_\epsilon$ contains $p+1$
 vertices: a vertex is a 0-simplex, an edge is a 1-simplex, and a triangle is a 2-simplex.
-The $p$-chain group is the $\mathbb F$-vector space spanned by the $p$-simplices: $C_p(K_\epsilon)=\mathrm{span}_{\mathbb{F}}\left\{[v_0,\ldots,v_p]\in K_\epsilon\right\}$, with the boundary map $\partial_p:C_p\rightarrow C_{p-1}$
+The $p$-chain group is the $\mathbb F$-vector space spanned by the $p$-simplices: $C_p(K_\epsilon)=\mathrm{span}_{\mathbb{F}}\left\lbrace[v_0,\ldots,v_p]\in K_\epsilon\right\rbrace$, with the boundary map $\partial_p:C_p\rightarrow C_{p-1}$
 
 $$
 \partial_p[v_0,\ldots,v_p]
@@ -301,9 +301,9 @@ $$
 \mathcal H=\bigoplus_p \mathcal H_p,
 \qquad
 \mathcal H_p
-=\mathrm{span}\left\{
+=\mathrm{span}\left\lbrace
 |z\rangle:|z|=p+1
-\right\}.
+\right\rbrace.
 $$
 
 At scale $\epsilon$, only
@@ -312,9 +312,9 @@ subspace
 
 $$
 \mathcal H_{C_p}
-=\mathrm{span}\left\{
+=\mathrm{span}\left\lbrace
 |\sigma\rangle:\sigma\in C_p(K_\epsilon)
-\right\}
+\right\rbrace
 \subseteq\mathcal H_p,
 \qquad
 \dim\mathcal H_{C_p}=|C_p(K_\epsilon)|.
@@ -451,7 +451,7 @@ $$
 c_\alpha=\frac{1}{2^n}
 \mathrm{Tr}(\widetilde L_{p,S}P_\alpha),
 \qquad
-P_\alpha\in\{I,X,Y,Z\}^{\otimes n},
+P_\alpha\in\lbrace I,X,Y,Z\rbrace^{\otimes n},
 $$
 
    then construct its time evolution by Trotterization:
