@@ -52,7 +52,7 @@ The Hodge-Laplacian script computes harmonic cycles and Betti numbers at differe
 python -m scripts.classical_hodge_laplacian_betti
 ~~~
 
-~~~text
+<!-- ~~~text
 beta_1 = dim ker(L_1) = 2
 
 zero mode 1 in the C_1(K_epsilon) basis
@@ -72,7 +72,7 @@ epsilon -> beta_1(K_epsilon) = dim ker L_1(K_epsilon)
   1.172352        2
   1.469419        1
   2.486905        0
-~~~
+~~~ -->
 
 The QTDA script estimates Betti numbers from a simulated quantum circuit following the LGZ algorithm:
 
