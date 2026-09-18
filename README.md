@@ -127,20 +127,11 @@ d(x,y)\leq\epsilon,
 \}.
 $$
 
-As $\epsilon$ increases, simplices are added but never removed, giving rise to a filtration
-$
-K_{\epsilon_0}\subseteq \cdots \subseteq K_{\epsilon_m}.
-$
+As $\epsilon$ increases, simplices are added but never removed, giving rise to a filtration $K_{\epsilon_0}\subseteq \cdots \subseteq K_{\epsilon_m}$.
 
 A $p$-simplex $\sigma=[v_0,\ldots,v_p]\in K_\epsilon$ contains $p+1$
 vertices: a vertex is a 0-simplex, an edge is a 1-simplex, and a triangle is a 2-simplex.
-The $p$-chain group is the $\mathbb F$-vector space spanned by the $p$-simplices:
-$
-C_p(K_\epsilon)
-=\mathrm{span}_{\mathbb{F}}
-\{[v_0,\ldots,v_p]\in K_\epsilon\},
-$
-with the boundary map $\partial_p:C_p\rightarrow C_{p-1}$
+The $p$-chain group is the $\mathbb F$-vector space spanned by the $p$-simplices: $C_p(K_\epsilon)=\mathrm{span}_{\mathbb{F}}\{[v_0,\ldots,v_p]\in K_\epsilon\}$, with the boundary map $\partial_p:C_p\rightarrow C_{p-1}$
 
 $$
 \partial_p[v_0,\ldots,v_p]
@@ -148,14 +139,7 @@ $$
 [v_0,\ldots,v_{r-1},v_{r+1},\ldots,v_p].
 $$
 
-The $p$-th homology group is
-$
-H_p(K_\epsilon)
-=\ker\partial_p / \mathrm{im}\,\partial_{p+1}
-$ and its dimension is the $p$-th Betti number
-$
-\beta_p^{(\epsilon)}=\dim H_p(K_\epsilon).
-$
+The $p$-th homology group is $H_p(K_\epsilon)=\ker\partial_p / \mathrm{im}\,\partial_{p+1}$ and its dimension is the $p$-th Betti number $\beta_p^{(\epsilon)}=\dim H_p(K_\epsilon)$.
 
 The inclusion $\iota:K_{\epsilon_i}\hookrightarrow K_{\epsilon_j}$ induces a linear
 map on homology,
@@ -200,7 +184,7 @@ D=
 \begin{array}{ccccc}
 \sigma_0 & \sigma_1 & \sigma_2 & \cdots & \sigma_m
 \end{array}
-\\[-0.2em]
+\\
 \begin{array}{c}
 \sigma_0\\
 \sigma_1\\
@@ -208,7 +192,6 @@ D=
 \vdots\\
 \sigma_m
 \end{array}
-\!\!\!\!\!\!\!\!\!\!\!\!
 &
 \begin{pmatrix}
 0 & * & * & \cdots & *\\
@@ -258,10 +241,7 @@ $$
 
 A useful operator in the quantum algorithm is the Dirac operator that
 combines all boundary maps into one Hermitian operator on the graded chain
-space $C=\bigoplus_p C_p$:
-$
-B=\partial+\partial^\dagger.
-$
+space $C=\bigoplus_p C_p$: $B=\partial+\partial^\dagger$.
 
 $$
 B=
@@ -273,10 +253,7 @@ B=
  &  &  & \partial_n^\dagger &
 \end{pmatrix}.
 $$
-Because $\partial^2=0$, its square is block diagonal,
-$
-B^2=\bigoplus_p L_p.
-$
+Because $\partial^2=0$, its square is block diagonal, $B^2=\bigoplus_p L_p$.
 
 If we are interested only in $L_p$, we only need the part of $B$ acting on
 $C_{p-1}\oplus C_p\oplus C_{p+1}$:
@@ -437,8 +414,7 @@ We construct $\rho_p$ in three steps.
    \sum_{\sigma\in C_p}|\sigma\rangle_S|\sigma\rangle_R.
    $$
 
-   Tracing out $R$ gives $\rho_p=\mathrm{Tr}_R
-   (|\Phi_p\rangle\langle\Phi_p|)$.
+   Tracing out $R$ gives $\rho_p=\mathrm{Tr}_R(|\Phi_p\rangle\langle\Phi_p|)$.
 
 ### Step two: Quantum Phase Estimation
 
