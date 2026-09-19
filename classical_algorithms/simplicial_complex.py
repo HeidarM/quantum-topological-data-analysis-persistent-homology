@@ -43,3 +43,46 @@ def vr_filtration(data, max_dim=3):
     simplices.sort(key=lambda simplex: (simplex.distance, simplex.dim))
 
     return simplices
+
+
+# More efficient approach for the quantum algorithm
+def distance_matrix(data):
+    # Pairwise distance matrix
+    #
+    # D[i, j] = ||x_i - x_j||
+    #
+    # This is the only geometric information we need to compute once.
+    # For different filtration values epsilon, we reuse D and only
+    # recompute the threshold graph.
+    #
+    # O(n^2) complexity
+    
+    X = np.asarray(data, dtype=float)
+    n = len(X)
+
+    D = np.zeros((n, n), dtype=float)
+
+    for i in range(n):
+        distances = np.linalg.norm(X[i + 1:] - X[i], axis=1)
+
+        # Only nned to compute upper triangle and then copy it
+        D[i, i + 1:] = distances
+        D[i + 1:, i] = distances
+
+    return D
+
+
+def threshold_graph(D, epsilon):
+    # Vietoris-Rips threshold graph at scale epsilon
+    #
+    # A[i, j] = 1  if D[i, j] <= epsilon
+    #           0  otherwise
+    #
+    # The entire Vietoris-Rips complex is encoded implicitly by A:
+    # sigma is a simplex iff its vertices form a clique in A.
+    D = np.asarray(D, dtype=float)
+
+
+    A = D <= epsilon
+
+    return A
