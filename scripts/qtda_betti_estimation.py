@@ -8,17 +8,14 @@ import numpy as np
 from pytket import Circuit
 from pytket.extensions.qiskit import AerBackend
 
-from classical_algorithms.hodge_laplacian import (
-    dirac_operator_from_filtration,
-    hodge_laplacian_from_filtration,
-    simplices_at_scale,
-    zero_modes,
-)
+from classical_algorithms.hodge_laplacian import dirac_operator_from_filtration, hodge_laplacian_from_filtration, simplices_at_scale, zero_modes
 from classical_algorithms.simplicial_complex import vr_filtration
+
 from quantum_algorithms.amplitude_amplification import amplitude_amplification, optimal_amplification_iterations
 from quantum_algorithms.pauli import pauli_decomposition
 from quantum_algorithms.phase_estimation import QPE
 from quantum_algorithms.trotter import trotterized_pauli_evolution
+
 from qtda.dicke_state import hamming_weight_superposition
 from qtda.simplex_encoding import embed_simplicial_operator
 from qtda.simplex_reflection import RG

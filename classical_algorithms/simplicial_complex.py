@@ -86,3 +86,19 @@ def threshold_graph(D, epsilon):
     A = D <= epsilon
 
     return A
+
+# Count p-simplices from A matrix
+def count_simplices(A, p):
+    # A p-simplex is a set of p + 1 vertices with every pair connected.
+    num_simplices = 0
+
+    for vertices in combinations(range(len(A)), p + 1):
+        valid = True
+        for u, v in combinations(vertices, 2):
+            if not A[u, v]:
+                valid = False
+                break
+        if valid:
+            num_simplices += 1
+
+    return num_simplices

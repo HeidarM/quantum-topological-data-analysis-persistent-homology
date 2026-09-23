@@ -16,7 +16,7 @@
 # R_u construction:
 # R_u = 2|u><u| - I = A(2|00...0><00...0| - I)A_dagger
 
-from math import asin, ceil, floor, pi, sin, sqrt
+from math import asin, sin, sqrt
 
 from pytket import Circuit, OpType
 from pytket.circuit import CircBox
@@ -48,34 +48,35 @@ def zero_state_reflection(n):
 def amplitude_amplification(A, R_G, iterations=1):
     # A: preparation circuit, A|00...0> = |u>
     # R_G: phase oracle which reflects the good subspace
+    # The oracle may use extra work qubits after the data qubits; these start and end in zero.
     # Build Q^r A = (R_u R_G)^r A. r = iterations
     n = A.n_qubits
 
-    circ = Circuit(n)
-    qubits = list(range(n))
+    circ = Circuit(R_G.n_qubits)
+    data_qubits = list(range(n))
+    all_qubits = list(range(R_G.n_qubits))
     R_0 = zero_state_reflection(n)
 
     # Prepare |u>
-    circ.add_gate(A, qubits)
+    circ.add_gate(A, data_qubits)
 
     for _ in range(iterations):
         # Step 1: R_G, phase-flip the good states
-        circ.add_gate(R_G, qubits)
+        circ.add_gate(R_G, all_qubits)
 
         # Step 2: R_u = A R_0 A_dagger, reflect about |u>
-        circ.add_gate(A.dagger, qubits)
-        circ.add_gate(R_0, qubits)
-        circ.add_gate(A, qubits)
+        circ.add_gate(A.dagger, data_qubits)
+        circ.add_gate(R_0, data_qubits)
+        circ.add_gate(A, data_qubits)
 
     return CircBox(circ)
 
 
 
-# Find optimal number of iteratiors for uniform state
-def optimal_amplification_iterations(initial_good_probability):
+# Find the best number of iterations from 0 to k_max.
+def optimal_amplification_iterations(initial_good_probability, k_max=5):
     # zeta = P_good(0), theta = arcsin(sqrt(zeta))
     # P_good(r) = sin^2((2r + 1) theta)
-    # Choose the integer r nearest to pi/(4 theta) - 1/2.
     zeta = initial_good_probability
 
     if zeta == 0:
@@ -85,11 +86,14 @@ def optimal_amplification_iterations(initial_good_probability):
         return 0
 
     theta = asin(sqrt(zeta))
-    r_exact = pi / (4 * theta) - 1 / 2
-    r_low = max(0, floor(r_exact))
-    r_high = max(0, ceil(r_exact))
+    best_iterations = 0
+    best_probability = zeta
 
-    def good_probability(r):
-        return sin((2 * r + 1) * theta)**2
+    for r in range(1, k_max + 1):
+        probability = sin((2 * r + 1) * theta)**2
+        # Keep fewer iterations if the probabilities differ only by rounding.
+        if probability > best_probability + 1e-12:
+            best_iterations = r
+            best_probability = probability
 
-    return max((r_low, r_high), key=good_probability)
+    return best_iterations
