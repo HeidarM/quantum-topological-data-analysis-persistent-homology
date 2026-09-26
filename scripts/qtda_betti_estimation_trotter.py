@@ -1,5 +1,5 @@
-# scripts/qtda_betti_estimation.py
-# Run from the root folder as: python -m scripts.qtda_betti_estimation
+# scripts/qtda_betti_estimation_trotter.py
+# Run from the root folder as: python -m scripts.qtda_betti_estimation_trotter
 
 from math import comb
 
@@ -20,7 +20,7 @@ from qtda.dicke_state import hamming_weight_superposition
 from qtda.simplex_encoding import embed_simplicial_operator
 from qtda.simplex_reflection import RG
 
-
+# Measuring the QPE circuit and returning the zero_count / shots
 def measure_zero_phase_probability(qpe_circ, shots=10000):
     backend = AerBackend()
     compiled_circ = backend.get_compiled_circuit(qpe_circ)
@@ -49,6 +49,9 @@ def qtda_calculation(data, epsilon, p, phase_bits, time, trotter_steps, shots=10
     print(f"{p}-simplices at radius epsilon = {epsilon}")
     print(f"C_{p}(K_epsilon) = {C_p}")
 
+    # ====================================================
+    # Registers
+    # ====================================================
     # State preparation registers: |0...0>_S |0...0>_R
     # QPE later adds the phase register |0...0>_P.
     circ = Circuit()
@@ -72,13 +75,13 @@ def qtda_calculation(data, epsilon, p, phase_bits, time, trotter_steps, shots=10
     #  AA|u_p> ≈ 1/sqrt(|C_p(K_epsilon)|) sum_{sigma in C_p(K_epsilon)} |sigma>
     # ====================================================
     weight = p + 1
-    A = hamming_weight_superposition(n, weight)
+    DICKE = hamming_weight_superposition(n, weight)
 
     # 1b: amplify the valid p-simplex labels.
     R_G = RG(data_qubits, C_p)
     initial_good_probability = len(C_p) / comb(n, weight)   # Used to estimate number of AA steps
     AA_iterations = optimal_amplification_iterations(initial_good_probability)
-    AA = amplitude_amplification(A, R_G, AA_iterations)
+    AA = amplitude_amplification(DICKE, R_G, AA_iterations)
     circ.add_gate(AA, data_qubits)
 
     print("\n--- Amplitude amplification ---")

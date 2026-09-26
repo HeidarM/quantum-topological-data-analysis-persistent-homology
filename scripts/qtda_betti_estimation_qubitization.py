@@ -9,6 +9,7 @@
 #
 #   n = number of points; m = number of nonedges; r = ceil(log2(n)).
 #
+# The anc work register is used for AA then later qubitization walk.
 # During AA:
 #   anc[0:m] : m nonedge-violation qubits
 #   anc[m]   : membership qubit
@@ -39,7 +40,7 @@ from qtda.qubitization import dirac_qubitization_walk
 from qtda.simplex_reflection import simplex_membership_reflection
 
 
-
+# Measuring the QPE circuit and returning the zero_count / shots
 def measure_zero_phase_probability(qpe_circ, shots=10000):
     backend = AerBackend()
     compiled_circ = backend.get_compiled_circuit(qpe_circ, optimisation_level=1)
@@ -57,43 +58,53 @@ def measure_zero_phase_probability(qpe_circ, shots=10000):
 
 
 def qtda_calculation(data, epsilon, p, phase_bits, shots=10000):
+    
     n = len(data)
-    A = threshold_graph(distance_matrix(data), epsilon)
+    
+    # Only classical computation needed for VR-complex
+    D = distance_matrix(data)
+    A = threshold_graph(D, epsilon)
     num_simplices = count_simplices(A, p)
 
-    # The membership oracle needs one ancilla per nonedge, plus a membership qubit.
-    num_edges = int(np.count_nonzero(np.triu(A, 1)))
-    num_nonedges = comb(n, 2) - num_edges
-    num_oracle_ancillas = num_nonedges + 1
-
-    # The walk needs r vertex-label qubits and one value flag.
+    # One work qubit per nonedge, plus one membership qubit (for membership reflection R_G in AA)
+    num_nonedges = 0
+    for u in range(n):
+        for v in range(u + 1, n):
+            if not A[u, v]:
+                num_nonedges += 1
+    num_oracle_ancillas = num_nonedges + 1 # For AA
+    
+    # Qubitization walk ancillas: r vertex-label qubits and one value flag.
     r = ceil(log2(n))
-    num_ancillas = max(num_oracle_ancillas, r + 1)
+    num_ancillas = max(num_oracle_ancillas, r + 1) # Ancilla shared between AA and qubitization, largest number decide
 
     print("\n--- Vietoris-Rips complex ---")
     print(f"{p}-simplices at radius epsilon = {epsilon}")
     print(f"|C_{p}(K_epsilon)| = {num_simplices}")
 
+    # ====================================================
+    # Registers
+    # ====================================================
     # Initial registers: |0...0>_S |0...0>_R |0...0>_anc
     # QPE later adds the phase register |0...0>_P.
     circ = Circuit()
-    simplex_register = circ.add_q_register("S", n)             # S: simplex, n qubits
-    reference_register = circ.add_q_register("R", n)           # R: copies S, n qubits
-    ancilla_register = circ.add_q_register("anc", num_ancillas) # anc: shared work, k = num_ancillas qubits
+    simplex_register = circ.add_q_register("S", n)               # S: simplex, n qubits
+    reference_register = circ.add_q_register("R", n)             # R: copies S, n qubits
+    ancilla_register = circ.add_q_register("anc", num_ancillas)  # anc: shared work, k = num_ancillas qubits
 
-    data_qubits = list(simplex_register)                       # [S[0], S[1], ..., S[n - 1]]
-    reference_qubits = list(reference_register)                # [R[0], R[1], ..., R[n - 1]]
-    ancilla_qubits = list(ancilla_register)                     # [anc[0], anc[1], ..., anc[k - 1]]
+    data_qubits = list(simplex_register)                         # [S[0], S[1], ..., S[n - 1]]
+    reference_qubits = list(reference_register)                  # [R[0], R[1], ..., R[n - 1]]
+    ancilla_qubits = list(ancilla_register)                      # [anc[0], anc[1], ..., anc[k - 1]]
 
     # AA:   anc[0:m] checks nonedges; anc[m] stores membership (m = num_nonedges).
     # Walk: anc[0:r] stores the vertex label V; anc[r] is the value flag a.
 
     print("\n--- Quantum registers ---")
-    print(f"S: {n} qubits  (simplex label)")
-    print(f"R: {n} qubits  (reference register)")
-    print(f"anc: {num_ancillas} qubits  (shared work register)")
-    print(f"P: {phase_bits} qubits  (QPE phase register)")
-    print(f"total: {2 * n + num_ancillas + phase_bits} qubits")
+    print(f"S:\t {n} qubits  (simplex label)")
+    print(f"R:\t {n} qubits  (reference register)")
+    print(f"anc:\t {num_ancillas} qubits  (shared work register)")
+    print(f"P:\t {phase_bits} qubits  (QPE phase register)")
+    print(f"total:\t {2 * n + num_ancillas + phase_bits} qubits")
 
     # ====================================================
     # STEP 1a: Create hamming weight = p+1 superposition
@@ -132,34 +143,28 @@ def qtda_calculation(data, epsilon, p, phase_bits, shots=10000):
         circ.CX(source, target)
 
     # ====================================================
-    # STEP 3: Dirac operator on the simplex register
-    #
-    # B = boundary + boundary^dagger.
-    # beta_p(K_epsilon) = dim(ker B intersect C_p) = dim ker L_p.
+    # STEP 3: Full Dirac operator on the simplex register
+    #         B = boundary + boundary^dagger.
+    # 
+    # Sparse block encoding then qubitization walk
+    #           B -> U_B -> W = R U_B
     # ====================================================
-    U, alpha = dirac_qubitization_walk(A)
-
-    # ====================================================
-    # STEP 4: Qubitized evolution
-    #
-    # <0| U_B |0> = B / alpha; U = (2P - I) U_B.
-    # A zero eigenvalue of B gives walk phases 1/4 and 3/4.
-    # ====================================================
-
-    print("\n--- Dirac qubitization ---")
+    W, alpha = dirac_qubitization_walk(A)
+    
+    print("\n--- Dirac block encoding and qubitization walk ---")
     print(f"block-encoding scale alpha = {alpha}")
 
     # ====================================================
-    # STEP 5: Quantum phase estimation
+    # STEP 4: Quantum phase estimation
     #
-    # QPE applies U to S and the block ancillas while R is unchanged.
+    # QPE on qubitization walk W
     # Measuring phases 1/4 and 3/4 gives probability beta_p / |C_p(K_epsilon)|.
     # ====================================================
     evolution_qubits = data_qubits + ancilla_qubits[:r + 1]
-    circ = QPE(U, circ, phase_bits, evolution_qubits)
+    circ = QPE(W, circ, phase_bits, evolution_qubits)       # Adds QPE register to the circuit
 
     # ====================================================
-    # STEP 6: Measure the zero-eigenvalue phases
+    # STEP 5: Measure the zero-eigenvalue phases
     # ====================================================
     zero_phase_probability = measure_zero_phase_probability(circ, shots)    # S+V+a registers for qubization walk
     predicted_beta_p = num_simplices * zero_phase_probability
