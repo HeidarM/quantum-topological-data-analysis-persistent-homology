@@ -6,7 +6,7 @@ This repository implements algorithms from classical and quantum topological dat
 Vietoris-Rips complex and the corresponding persistent homology, which give us the persistence
 barcode. We also compute Betti numbers using the combinatorial Hodge-Laplacian, for comparison with the quantum approach.
 
-**Quantum Topological Data Analysis:** We follow the main steps of the original [LGZ algorithm](https://arxiv.org/abs/1408.3106), and implement and simulate the circuit in [pytket](https://docs.quantinuum.com/tket/api-docs/). The algorithm involves amplitude amplification, Trotterized evolution of the Hodge-Laplacian, and Quantum Phase Estimation.
+**Quantum Topological Data Analysis:** We follow the main steps of the original [LGZ algorithm](https://arxiv.org/abs/1408.3106), using amplitude amplification to prepare simplex states and Quantum Phase Estimation to estimate Betti numbers. Our main implementation uses **sparse block encoding of the Dirac operator and a [qubitization walk](https://arxiv.org/abs/1610.06546)**, with oracles constructed from the threshold adjacency matrix. We also implement Trotterized evolution for testing and comparison. The circuits are implemented and simulated using [pytket](https://docs.quantinuum.com/tket/api-docs/).
 
 All classical and quantum-algorithm components are implemented for clarity, not optimized in any way.
 
@@ -25,14 +25,10 @@ All classical and quantum-algorithm components are implemented for clarity, not 
   - [Step two: Quantum Phase Estimation](#step-two-quantum-phase-estimation)
     - [Sparse block encoding and Qubitization](#sparse-block-encoding-and-qubitization)
     - [Pauli decomposition and Trotterization](#pauli-decomposition-and-trotterization)
+  - [Resource estimates](#resource-estimates)
 - [Appendix](#appendix)
-  - [Good state reflection: Simplex membership oracle](#good-state-reflection-simplex-membership-oracle)
   - [Sparse block encoding of the Dirac operator](#sparse-block-encoding-of-the-dirac-operator)
-    - [Matrix elements and registers](#matrix-elements-and-registers)
-    - [Position and value oracles](#position-and-value-oracles)
-    - [Constructing the block encoding](#constructing-the-block-encoding)
-    - [Linear Combination of Unitaries (LCU) interpretation](#linear-combination-of-unitaries-lcu-interpretation)
-    - [Implementing the oracles from the threshold graph](#implementing-the-oracles-from-the-threshold-graph)
+  - [Simplex membership oracle](#simplex-membership-oracle)
 
 ## Running the examples
 
@@ -148,7 +144,7 @@ is the **persistent Betti number**.
 #### Computing Persistent Homology
 We use the standard reduction algorithm of [Zomorodian and Carlsson, *Computing Persistent Homology*](https://doi.org/10.1007/s00454-004-1146-y).
 
-For computing persistent Betti numbers it's simplest to work over $\mathbb F = \mathbb F_2$. Define the $n\times n$ global boundary matrix $D$ by $D_{ij} = \langle\sigma_i, \partial\sigma_j\rangle$. Over $\mathbb F_2$, this becomes
+For computing persistent Betti numbers it's simplest to work over $\mathbb F = \mathbb F_2$. Define the global boundary matrix $D$ by $D_{ij} = \langle\sigma_i, \partial\sigma_j\rangle$. Over $\mathbb F_2$, this becomes
 
 $$
 D_{ij}=
@@ -527,46 +523,58 @@ $$
 \beta_p\approx|C_p|\frac{N_0}{N}.
 $$
 
+### Resource estimates
+
+We will give some broad comments on resources needed, for the qubitization approach. A more detailed analysis of gate costs and comparison with classical methods will be added later.
+
+#### Qubits
+
+The simplex and reference registers each use $n$ qubits. For AA, the Membership oracle needs $h\le n$ violation qubits and one membership qubit. After AA, these qubits are used for the qubitization walk's $r+1$ ancillas, where $r=\lceil\log_2 n\rceil$. QPE adds $q$ phase qubits, for $q$-bits of accuracy.
+Thus the total is $N_{\mathrm{qubits}}=2n+\max(h+1,r+1)+q$, or
+
+$$
+N_{\mathrm{qubits}}\le 3n+q+1.
+$$
+
+The required QPE precision depends on the spectral gap of $B$. Zero modes correspond to phases $\phi_0=1/4$ and $3/4$. Let $\Delta=\min_{\lambda\ne0}|\lambda|$ be the smallest nonzero eigenvalue magnitude. For the closest nonzero eigenvalues $\lambda=\pm\Delta$, the separation from the nearest zero-mode phase is $\delta\phi=|\phi_0-\phi_\Delta|$, given by
+
+$$
+\delta\phi = \frac{\arcsin\left(\Delta/\alpha\right)}{2\pi} = \frac{\Delta}{2\pi\alpha} + O\left(\frac{\Delta}{\alpha}\right)^3.
+$$
+We are mainly concerned with small $\Delta/\alpha$. For $q$ QPE qubits, the phase grid has spacing $2^{-q}$, so to have a fine enough grid to resolve the phase gap we need
+
+$$
+2^{-q} \leq \delta\phi\approx \frac{\Delta}{2\pi\alpha} \quad \Rightarrow\quad q\geq \log_2\left(\frac{2\pi\alpha}{\Delta}\right).
+$$
+This estimates the resolution needed; tighter QPE error tolerances can require additional phase qubits.
+For our block encoding we have $\alpha = O(n)$. Imagine a family of pointclouds, as we add more data. For fixed QPE error tolerance, if $\Delta$ is constant or the gap closes polynomially $\Delta\sim n^{-k}$, then $q = O(\log n)$. If the gap closes exponentially in $n$, then $q$ must scale with $n$ or higher.
+
+#### Circuit cost
+
+We count how often the main subroutines are called. This shows how the valid-simplex fraction, QPE precision, and number of measurements affect the cost.
+
+1. **Prepare the mixture.** Apply $A_p$ once, then perform $k$ AA iterations. Each iteration uses $A_pR_0A_p^\dagger$ for the state reflection and $O_K^\dagger ZO_K$ for the good-state reflection. For a small valid-simplex fraction $\zeta=|C_p|/\binom{n}{p+1}$, standard AA needs $O(1/\sqrt{\zeta})$ iterations for constant success probability.
+
+2. **Run QPE.** Apply controlled powers $W,W^2,\ldots,W^{2^{q-1}}$. In our implementation, these powers are built by repeating the walk, giving
+
+$$
+1+2+\cdots+2^{q-1}=2^q-1
+$$
+
+   controlled walk calls per shot. The walk count grows exponentially in $q$, but is polynomial in $n$ when $q=O(\log n)$.
+
+The main circuit calls per shot are therefore:
+
+| Circuit | Calls per shot |
+| --- | --- |
+| Preparation $A_p$ or $A_p^\dagger$ | $2k+1$ |
+| Membership oracle $O_K$ or $O_K^\dagger$ | $2k$ |
+| Controlled walk $W$ | $2^q-1$ |
+
+
+Repeating the circuit for $N$ measurements multiplies these counts by $N$. Thus rare valid simplices increase the AA cost, while a smaller normalized spectral gap requires more QPE precision and more walk calls.
+
 ## Appendix
-
-### Good state reflection: Simplex membership oracle
-
-We need a unitary that reflects valid $p$-simplex states: $R_{C_p}|\sigma\rangle=(-1)^{\chi_{C_p}(\sigma)}|\sigma\rangle$. The Dicke state already restricts $\sigma$ to Hamming weight $p+1$. A Vietoris–Rips simplex is valid iff every pair of occupied vertices is an edge or equivalently iff it contains no invalid edge. Define the set of nonedges (invalid edges)
-
-$$
-\mathcal N=\lbrace(i,j) \mid i<j,\ A_{ij}=0\rbrace.
-$$
-
-For a given $\sigma$, the condition $\sigma_i\land\sigma_j$ checks whether the $(i,j)$ edge is present or not. We must then make sure all non-edges are not present:
-
-$$
-\chi_{C_p}(\sigma)=\bigwedge_{(i,j)\in\mathcal N}
-\neg(\sigma_i\land\sigma_j).
-$$
-
-We can compute this in a unitary circuit. For a given matrix $A$, we need $m=|\mathcal N|$ ancillas to check every non-edge condition $v_{ij}=\sigma_i\land\sigma_j$, and one ancilla to encode the result $\chi_{C_p}(\sigma)$:
-
-$$
-O_K|\sigma\rangle|0\rangle^{\otimes m}|b\rangle
-=|\sigma\rangle|0\rangle^{\otimes m}|b\oplus\chi_{C_p}(\sigma)\rangle.
-$$
-
-The circuit thus (1) computes the $m$ violation bits, (2) checks that they are all $0$ and (3) uncomputes violation bits (see [simplex_reflection.py](qtda/simplex_reflection.py)). Finally, compute membership, apply $Z$ to $b$, and uncompute: $R_{C_p}=O_K^\dagger(I\otimes Z_b)O_K$.
-
-This approach gives us $m+1$ ancillas, which at worst can be $O(n^2)$. We can actually do better. For each $i=0, \cdots, n-1$, compute
-
-$$
-\mathcal N_i=\lbrace j \mid j>i,\ A_{ij}=0\rbrace.
-$$
-
-If $\sigma_i=1$, then for all $j\in\mathcal N_i$ we must have $\sigma_j=0$ for a valid simplex. We can thus compute the membership indicator as
-
-$$
-t_i=\bigvee_{j\in\mathcal N_i}\sigma_i\land\sigma_j,
-\qquad
-\chi_{C_p}(\sigma)=\bigwedge_i\neg t_i.
-$$
-This approach needs at most $n$ violation bits and one membership qubit, giving $O(n)$ ancillas
 
 ### Sparse block encoding of the Dirac operator
 
@@ -728,3 +736,42 @@ Combining the two parts gives, we get the value oracle
 $$
 O_B=O_sO_\chi.
 $$
+
+### Simplex membership oracle
+
+For amplitude amplification, we need a good state reflection circuit. So a unitary that reflects valid $p$-simplex states: $R_{C_p}|\sigma\rangle=(-1)^{\chi_{C_p}(\sigma)}|\sigma\rangle$. The Dicke state already restricts $\sigma$ to Hamming weight $p+1$. A Vietoris–Rips simplex is valid iff every pair of occupied vertices is an edge or equivalently iff it contains no invalid edge. Define the set of nonedges (invalid edges)
+
+$$
+\mathcal N=\lbrace(i,j) \mid i<j,\ A_{ij}=0\rbrace.
+$$
+
+For a given $\sigma$, the condition $\sigma_i\land\sigma_j$ checks whether the $(i,j)$ edge is present or not. We must then make sure all non-edges are not present:
+
+$$
+\chi_{C_p}(\sigma)=\bigwedge_{(i,j)\in\mathcal N}
+\neg(\sigma_i\land\sigma_j).
+$$
+
+We can compute this in a unitary circuit. For a given matrix $A$, we need $m=|\mathcal N|$ ancillas to check every non-edge condition $v_{ij}=\sigma_i\land\sigma_j$, and one ancilla to encode the result $\chi_{C_p}(\sigma)$:
+
+$$
+O_K|\sigma\rangle|0\rangle^{\otimes m}|b\rangle
+=|\sigma\rangle|0\rangle^{\otimes m}|b\oplus\chi_{C_p}(\sigma)\rangle.
+$$
+
+The circuit thus (1) computes the $m$ violation bits, (2) checks that they are all $0$ and (3) uncomputes violation bits (see [simplex_reflection.py](qtda/simplex_reflection.py)). Finally, compute membership, apply $Z$ to $b$, and uncompute: $R_{C_p}=O_K^\dagger(I\otimes Z_b)O_K$.
+
+This approach gives us $m+1$ ancillas, which at worst can be $O(n^2)$. We can actually do better. For each $i=0, \cdots, n-1$, compute
+
+$$
+\mathcal N_i=\lbrace j \mid j>i,\ A_{ij}=0\rbrace.
+$$
+
+If $\sigma_i=1$, then for all $j\in\mathcal N_i$ we must have $\sigma_j=0$ for a valid simplex. We can thus compute the membership indicator as
+
+$$
+t_i=\bigvee_{j\in\mathcal N_i}\sigma_i\land\sigma_j,
+\qquad
+\chi_{C_p}(\sigma)=\bigwedge_i\neg t_i.
+$$
+This approach needs at most $n$ violation bits and one membership qubit, giving $O(n)$ ancillas
