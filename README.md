@@ -541,11 +541,13 @@ The required QPE precision depends on the spectral gap of $B$. Zero modes corres
 $$
 \delta\phi = \frac{\arcsin\left(\Delta/\alpha\right)}{2\pi} = \frac{\Delta}{2\pi\alpha} + O\left(\frac{\Delta}{\alpha}\right)^3.
 $$
+
 We are mainly concerned with small $\Delta/\alpha$. For $q$ QPE qubits, the phase grid has spacing $2^{-q}$, so to have a fine enough grid to resolve the phase gap we need
 
 $$
 2^{-q} \leq \delta\phi\approx \frac{\Delta}{2\pi\alpha} \quad \Rightarrow\quad q\geq \log_2\left(\frac{2\pi\alpha}{\Delta}\right).
 $$
+
 This estimates the resolution needed; tighter QPE error tolerances can require additional phase qubits.
 For our block encoding we have $\alpha = O(n)$. Imagine a family of pointclouds, as we add more data. For fixed QPE error tolerance, if $\Delta$ is constant or the gap closes polynomially $\Delta\sim n^{-k}$, then $q = O(\log n)$. If the gap closes exponentially in $n$, then $q$ must scale with $n$ or higher.
 
@@ -584,7 +586,7 @@ The Dirac operator $B$ only connects simplices that differ by one vertex. Thus $
 
 $$
 B_{\sigma\oplus e_v,\sigma}=\chi(\sigma,v)s(\sigma,v),
-\qquad s(\sigma,v)=(-1)^{\sum_{u<v}\sigma_u}.
+\qquad s(\sigma,v)=(-1)^{\sum_{u\lt v}\sigma_u}.
 $$
 
 Here $\chi=0, 1$ checks whether the transition $\sigma\rightarrow\sigma\oplus e_v$ is allowed, and $s=\pm 1$ gives its
@@ -616,7 +618,7 @@ For unused vertex labels $v\geq n$, both oracles act as identity.
 #### Constructing the block encoding
 
 Prepare the vertex register uniformly with Hadamards, then apply
-$\mathrm{SELECT}_B$ and undo the preparation:
+$`\mathrm{SELECT}_B`$ and undo the preparation:
 
 $$
 \mathrm{SELECT}_B=O_PX_aO_B,
@@ -659,6 +661,7 @@ This makes $B$ look like a LCU, however $B_v$ is not unitary since $\chi$ can va
 $$
 U_v|\sigma, a\rangle_{Sa} = s(\sigma, v)\,|\sigma\oplus e_v,\,a\oplus 1\oplus\chi(\sigma, v)\rangle_{Sa}.
 $$
+
 Which is a block encoding: ${}_a\langle 0|U_v|0\rangle_a = B_v$. This first step turns $B\rightarrow \sum_v U_v$ into an LCU. We can thus block encode this using the standard LCU construction, adding the $V$ register:
 
 $$
@@ -706,6 +709,7 @@ $$
 \left[\prod_{u\in F_v}(1-\sigma_u)\right]
 \left[1-\prod_{u\ne v}(1-\sigma_u)\right].
 $$
+
 The second factor requires at least one vertex besides $v$. This excludes the empty-simplex transition since $\partial_0=\partial_0^\dagger=0$.
 
 We can readily implement this in a circuit as
@@ -715,20 +719,21 @@ O_\chi=\prod_{v=0}^{n-1}
 \left(C_{V=v,\,S_{F_v}=0}X_a\right)
 \left(C_{V=v,\,S_{\lbrace u \mid u\ne v\rbrace}=0}X_a\right),
 $$
+
 where $S_T$ denotes the $S$-register qubits for vertices in $T$, so $S_T=0$ means $\sigma_v = 0$ for all $v\in T$.
 
 **Apply $s$.** The orientation is
 
 $$
-s(\sigma,v)=(-1)^{\sum_{u<v}\sigma_u}
-=\prod_{u<v}(-1)^{\sigma_u}.
+s(\sigma,v)=(-1)^{\sum_{u\lt v}\sigma_u}
+=\prod_{u\lt v}(-1)^{\sigma_u}.
 $$
 
 For each $v$, apply $Z$ to every $S_u$ with $u<v$, controlled on $V=v$.
 Each occupied vertex $u<v$ contributes a minus sign
 
 $$
-O_s=\prod_{v=0}^{n-1}\prod_{u<v}C_{V=v}Z_{S_u}.
+O_s=\prod_{v=0}^{n-1}\prod_{u\lt v}C_{V=v}Z_{S_u}.
 $$
 
 Combining the two parts gives, we get the value oracle
@@ -774,4 +779,5 @@ t_i=\bigvee_{j\in\mathcal N_i}\sigma_i\land\sigma_j,
 \qquad
 \chi_{C_p}(\sigma)=\bigwedge_i\neg t_i.
 $$
+
 This approach needs at most $n$ violation bits and one membership qubit, giving $O(n)$ ancillas
