@@ -117,7 +117,8 @@ As $\epsilon$ increases, simplices are added but never removed, giving rise to a
 
 A $p$-simplex $\sigma=[v_0,\ldots,v_p]\in K_\epsilon$ contains $p+1$
 vertices: a vertex is a 0-simplex, an edge is a 1-simplex, and a triangle is a 2-simplex.
-The $p$-chain group is the $\mathbb F$-vector space spanned by the $p$-simplices: $`C_p(K_\epsilon)=\mathrm{span}_{\mathbb{F}}\left\lbrace[v_0,\ldots,v_p]\in K_\epsilon\right\rbrace`$, with the boundary map $\partial_p:C_p\rightarrow C_{p-1}$
+Let $`S_p(K_\epsilon)=\left\lbrace\sigma\in K_\epsilon\mid\dim\sigma=p\right\rbrace`$ denote the set of $p$-simplices.
+The $p$-chain group is the $\mathbb F$-vector space spanned by these simplices: $`C_p(K_\epsilon)=\mathrm{span}_{\mathbb{F}}S_p(K_\epsilon)`$, with the boundary map $\partial_p:C_p\rightarrow C_{p-1}$
 
 ```math
 \partial_p[v_0,\ldots,v_p]
@@ -324,11 +325,11 @@ subspace
 ```math
 \mathcal H_{C_p}
 =\mathrm{span}\left\lbrace
-|\sigma\rangle \mid \sigma\in C_p(K_\epsilon)
+|\sigma\rangle \mid \sigma\in S_p(K_\epsilon)
 \right\rbrace
 \subseteq\mathcal H_p,
 \qquad
-\dim\mathcal H_{C_p}=|C_p(K_\epsilon)|.
+\dim\mathcal H_{C_p}=\dim C_p(K_\epsilon)=|S_p(K_\epsilon)|.
 ```
 
 
@@ -339,10 +340,10 @@ valid $p$-simplices:
 
 ```math
 \rho_p
-=\frac{1}{|C_p|}
-\sum_{\sigma\in C_p}
+=\frac{1}{|S_p|}
+\sum_{\sigma\in S_p}
 |\sigma\rangle\langle\sigma|
-=\frac{\Pi_{C_p}}{|C_p|},
+=\frac{\Pi_{C_p}}{|S_p|},
 ```
 
 where $\Pi_{C_p}$ is the projector onto $\mathcal H_{C_p}$. We then use QPE
@@ -356,13 +357,13 @@ zero-phase result is
 ```math
 \Pr(\phi=0)
 =\mathrm{Tr}(\Pi_{\mathrm{harm},p}\rho_p)
-=\frac{\beta_p}{|C_p|}.
+=\frac{\beta_p}{|S_p|}.
 ```
 
 Thus, from $N$ QPE measurements with $N_0$ zero-phase outcomes,
 
 ```math
-\beta_p\approx|C_p|\frac{N_0}{N}.
+\beta_p\approx|S_p|\frac{N_0}{N}.
 ```
 
 ### Step one: Preparing the Simplex Mixture
@@ -380,20 +381,20 @@ A_p|0\cdots0\rangle=|u_p\rangle
 
 
 
-2. **Amplify $|C_p\rangle$.** We want to prepare the state
+2. **Amplify $|S_p\rangle$.** We want to prepare the state
 
 ```math
-|C_p\rangle
-=\frac{1}{\sqrt{|C_p|}}
-\sum_{\sigma\in C_p}|\sigma\rangle,
+|S_p\rangle
+=\frac{1}{\sqrt{|S_p|}}
+\sum_{\sigma\in S_p}|\sigma\rangle,
 ```
 
    however our current state decomposes as
 
 ```math
 |u_p\rangle
-=\sqrt{\zeta}\,|C_p\rangle
-+\sqrt{1-\zeta}\,|C_p^\perp\rangle.
+=\sqrt{\zeta}\,|S_p\rangle
++\sqrt{1-\zeta}\,|S_p^\perp\rangle.
 ```
 
    We need to use Grover-like amplitude amplification to increase $\zeta$.
@@ -408,26 +409,26 @@ R_{u_p}=2|u_p\rangle\langle u_p|-I,
 Q=R_{u_p}R_{C_p},
 ```
 
-   where $\chi_{C_p}(z)=1$ when $|z\rangle$ encodes a simplex in $C_p$, and
+   where $\chi_{C_p}(z)=1$ when $|z\rangle$ encodes a simplex in $S_p$, and
    is $0$ otherwise. We can implement one of the reflections as $R_{u_p} = A_p(2|0\rangle\langle 0|-I)A_p^\dagger$, for $R_{C_p}$ see the appendix.
 
    After $r$ iterations,
 
 ```math
-Q^rA_p|0\cdots0\rangle\approx|C_p\rangle.
+Q^rA_p|0\cdots0\rangle\approx|S_p\rangle.
 ```
 
-   The initial good-state probability is $\zeta=\frac{|C_p|}{\binom{n}{p+1}}$, from which we estimate the number of iterations $r$.
+   The initial good-state probability is $\zeta=\frac{|S_p|}{\binom{n}{p+1}}$, from which we estimate the number of iterations $r$.
 
 3. **Create the mixed state.** Introduce a reference register in $|0\rangle_R^{\otimes n}$
    and apply CNOTs:
 
 ```math
-|C_p\rangle_S|0\rangle_R^{\otimes n}
+|S_p\rangle_S|0\rangle_R^{\otimes n}
 \longrightarrow
 |\Phi_p\rangle_{SR}
-=\frac{1}{\sqrt{|C_p|}}
-\sum_{\sigma\in C_p}|\sigma\rangle_S|\sigma\rangle_R.
+=\frac{1}{\sqrt{|S_p|}}
+\sum_{\sigma\in S_p}|\sigma\rangle_S|\sigma\rangle_R.
 ```
 
    Tracing out $R$ gives $\rho_p=\mathrm{Tr}_R(|\Phi_p\rangle\langle\Phi_p|)$.
@@ -479,20 +480,20 @@ W=(2P-I)U_B,
    Ideally, the two phase probabilities satisfy
 
 ```math
-P(\phi=1/4)+P(\phi=3/4)=\frac{\beta_p}{|C_p|}.
+P(\phi=1/4)+P(\phi=3/4)=\frac{\beta_p}{|S_p|}.
 ```
 
 #### Pauli decomposition and Trotterization
 
 Since we are not exploiting sparseness here, the code uses both $B_p$ and $L_p$. We will here show QPE with $L_p$:
 
-1. **Embed $L_p$.** Classically, $L_p$ is a $|C_p|\times|C_p|$ matrix in the
+1. **Embed $L_p$.** Classically, $L_p$ is a $|S_p|\times|S_p|$ matrix in the
    basis of valid $p$-simplices. QPE needs an operator on all $n$ qubits of the
    simplex register, so we embed it in the $2^n$-dimensional space:
 
 ```math
 \widetilde L_{p,S}
-=\sum_{\sigma_i,\sigma_j\in C_p}
+=\sum_{\sigma_i,\sigma_j\in S_p}
 (L_p)_{ij}|\sigma_i\rangle\langle\sigma_j|.
 ```
 
@@ -522,7 +523,7 @@ U(t)=e^{-it\widetilde L_{p,S}}
    phase $0$. If $N_0$ of $N$ measurements give the all-zero phase,
 
 ```math
-\beta_p\approx|C_p|\frac{N_0}{N}.
+\beta_p\approx|S_p|\frac{N_0}{N}.
 ```
 
 ### Resource estimates
@@ -557,7 +558,7 @@ For our block encoding we have $\alpha = O(n)$. Imagine a family of pointclouds,
 
 We count how often the main subroutines are called. This shows how the valid-simplex fraction, QPE precision, and number of measurements affect the cost.
 
-1. **Prepare the mixture.** Apply $A_p$ once, then perform $k$ AA iterations. Each iteration uses $A_pR_0A_p^\dagger$ for the state reflection and $O_K^\dagger ZO_K$ for the good-state reflection. For a small valid-simplex fraction $\zeta=|C_p|/\binom{n}{p+1}$, standard AA needs $O(1/\sqrt{\zeta})$ iterations for constant success probability.
+1. **Prepare the mixture.** Apply $A_p$ once, then perform $k$ AA iterations. Each iteration uses $A_pR_0A_p^\dagger$ for the state reflection and $O_K^\dagger ZO_K$ for the good-state reflection. For a small valid-simplex fraction $\zeta=|S_p|/\binom{n}{p+1}$, standard AA needs $O(1/\sqrt{\zeta})$ iterations for constant success probability.
 
 2. **Run QPE.** Apply controlled powers $W,W^2,\ldots,W^{2^{q-1}}$. In our implementation, these powers are built by repeating the walk, giving
 
