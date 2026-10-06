@@ -97,21 +97,21 @@ python -m scripts.qtda_betti_estimation_qubitization
 
 We start from a point cloud from a dataset
 
-$$
+```math
 X=\lbrace x_0,\ldots,x_{n-1}\rbrace\subset\mathbb{R}^d.
-$$
+```
 
 At scale $\epsilon$, the Vietoris-Rips complex contains every simplex whose
 points are pairwise within distance $\epsilon$:
 
-$$
+```math
 K_\epsilon=
 \left\lbrace
 \sigma\subseteq X \;\big|\;
 d(x,y)\leq\epsilon,
 \quad \forall x,y\in\sigma
 \right\rbrace.
-$$
+```
 
 As $\epsilon$ increases, simplices are added but never removed, giving rise to a filtration $K_{\epsilon_0}\subseteq \cdots \subseteq K_{\epsilon_m}$.
 
@@ -119,13 +119,13 @@ A $p$-simplex $\sigma=[v_0,\ldots,v_p]\in K_\epsilon$ contains $p+1$
 vertices: a vertex is a 0-simplex, an edge is a 1-simplex, and a triangle is a 2-simplex.
 The $p$-chain group is the $\mathbb F$-vector space spanned by the $p$-simplices: $`C_p(K_\epsilon)=\mathrm{span}_{\mathbb{F}}\left\lbrace[v_0,\ldots,v_p]\in K_\epsilon\right\rbrace`$, with the boundary map $\partial_p:C_p\rightarrow C_{p-1}$
 
-$$
+```math
 \partial_p[v_0,\ldots,v_p]
 =\sum_{r=0}^{p}(-1)^r
 [v_0,\ldots,v_{r-1},v_{r+1},\ldots,v_p].
-$$
+```
 
-The $p$-th homology group is $H_p(K_\epsilon)=\ker\partial_p / \mathrm{im}\,\partial_{p+1}$ and its dimension is the $p$-th Betti number $\beta_p^{(\epsilon)}=\dim H_p(K_\epsilon)$.
+The $p$-th homology group is $`H_p(K_\epsilon)=\ker\partial_p / \mathrm{im}\,\partial_{p+1}`$ and its dimension is the $p$-th Betti number $\beta_p^{(\epsilon)}=\dim H_p(K_\epsilon)$.
 
 The inclusion $\iota:K_{\epsilon_i}\hookrightarrow K_{\epsilon_j}$ induces a linear
 map on homology,
@@ -137,7 +137,9 @@ The persistent homology group is
 $H_p^{i\to j}=\mathrm{im}(\iota^{i\to j}_*)$, containing classes present at scale
 $\epsilon_i$ that survive to $\epsilon_j$. Its dimension,
 
-$$\beta_p^{i\to j}=\dim H_p^{i\to j},$$
+```math
+\beta_p^{i\to j}=\dim H_p^{i\to j},
+```
 
 is the **persistent Betti number**.
 
@@ -146,13 +148,13 @@ We use the standard reduction algorithm of [Zomorodian and Carlsson, *Computing 
 
 For computing persistent Betti numbers it's simplest to work over $\mathbb F = \mathbb F_2$. Define the global boundary matrix $D$ by $D_{ij} = \langle\sigma_i, \partial\sigma_j\rangle$. Over $\mathbb F_2$, this becomes
 
-$$
+```math
 D_{ij}=
 \begin{cases}
 1, & \sigma_i\text{ is a codimension-one face of }\sigma_j,\\
 0, & \text{otherwise.}
 \end{cases}
-$$
+```
 
 For persistent homology, we need to keep track of the distance at which each simplex enters the Vietoris-Rips complex. In the code we track this using
 
@@ -163,7 +165,7 @@ FilteredSimplex(vertices=(0, 1, 3), distance=1.42)
 We order the simplices in the order they appear in the complex: $\sigma_0,\sigma_1,\ldots,\sigma_m$. This gives a filtration $K_0\subseteq\cdots\subseteq K_m$, where one new simplex is
 added at each step. In this basis:
 
-$$
+```math
 D=
 \begin{array}{cc}
 &
@@ -187,14 +189,14 @@ D=
 0 & 0 & 0 & \cdots & 0
 \end{pmatrix}
 \end{array}.
-$$
+```
 
 We reduce the columns from left to right. If the lowest $1$ in column $j$
-matches that of an earlier column $k<j$, we add the earlier column:
+matches that of an earlier column $k\lt j$, we add the earlier column:
 
-$$
-R_j \leftarrow R_j + R_k,\qquad k<j.
-$$
+```math
+R_j \leftarrow R_j + R_k,\qquad k\lt j.
+```
 
 This is addition modulo $2$, so it cancels the shared lowest $1$. We only use
 earlier columns: they correspond to simplices already present when
@@ -209,28 +211,28 @@ For the Hodge-Laplacian and the quantum algorithm, we use real chain spaces ($\m
 with oriented simplices as an orthonormal basis. At a fixed scale $\epsilon$,
 the $p$-th combinatorial Hodge-Laplacian is
 
-$$
+```math
 L_p
 =\partial_p^\dagger\partial_p
 +\partial_{p+1}\partial_{p+1}^\dagger,
 \qquad
 L_p:C_p\rightarrow C_p.
-$$
+```
 
 The vectors in $\ker L_p$ are the
 harmonic $p$-chains and are unique representatives of homology classes. Hodge theory gives
 
-$$
+```math
 \ker L_p\cong H_p(K_\epsilon),
 \qquad
-\beta_p^{(\epsilon)}=\dim\ker L_p.
-$$
+\beta_p^{(\epsilon)}=\dim\,\ker\,L_p.
+```
 
 A useful operator in the quantum algorithm is the Dirac operator that
 combines all boundary maps into one Hermitian operator on the graded chain
 space $C=\bigoplus_p C_p$: $B=\partial+\partial^\dagger$.
 
-$$
+```math
 B=
 \begin{pmatrix}
  & \partial_1 &  &  &  \\
@@ -239,27 +241,27 @@ B=
  &  & \ddots &  & \partial_n \\
  &  &  & \partial_n^\dagger &
 \end{pmatrix}.
-$$
+```
 
 Because $\partial^2=0$, its square is block diagonal, $B^2=\bigoplus_p L_p$.
 
 If we are interested only in $L_p$, we only need the part of $B$ acting on
 $C_{p-1}\oplus C_p\oplus C_{p+1}$:
 
-$$
+```math
 B_p=
 \begin{pmatrix}
 0 & \partial_p & 0\\
 \partial_p^\dagger & 0 & \partial_{p+1}\\
 0 & \partial_{p+1}^\dagger & 0
 \end{pmatrix}.
-$$
+```
 
 Then its square restricted to $C_p$ is the Hodge-Laplacian,
 
-$$
+```math
 B_p^2|_{C_p}=L_p.
-$$
+```
 
 
 ### Distance, threshold adjacency matrix and clique complex
@@ -268,14 +270,14 @@ The quantum algorithm estimates $\beta_p$ at a fixed scale $\epsilon$.
 To construct its oracles, we only need the pairwise distance matrix and
 the threshold adjacency matrix:
 
-$$
+```math
 D^{\mathrm{dist}}_{uv}=\|x_u-x_v\|,
 \qquad
 A_{uv}=\begin{cases}
 1, & D^{\mathrm{dist}}_{uv}\leq\epsilon,\\
 0, & \text{otherwise.}
 \end{cases}
-$$
+```
 
 The Vietoris-Rips complex is the **clique complex** of the threshold graph:
 a set of vertices forms a simplex exactly when every pair of distinct
@@ -292,7 +294,7 @@ For $n$ points in a fixed-dimensional space, $D^{\mathrm{dist}}$ and $A$ take $O
 Label the $n$ data points as $x_0,\ldots,x_{n-1}$ and use one qubit for each
 point. A simplex $\sigma\subseteq X$ is encoded by its vertex bit string:
 
-$$
+```math
 |\sigma\rangle=|z_0z_1\ldots z_{n-1}\rangle,
 \qquad
 z_i=
@@ -300,26 +302,26 @@ z_i=
 1, & x_i\in\sigma,\\
 0, & x_i\notin\sigma.
 \end{cases}
-$$
+```
 
 A $p$-simplex has $p+1$ vertices, so its state has Hamming weight $p+1$. The
 $n$-qubit Hilbert space decomposes into fixed-Hamming-weight
 subspaces:
 
-$$
+```math
 \mathcal H=\bigoplus_p \mathcal H_p,
 \qquad
 \mathcal H_p
 =\mathrm{span}\left\lbrace
 |z\rangle \mid |z|=p+1
 \right\rbrace.
-$$
+```
 
 At scale $\epsilon$, only
 the $p$-simplices in $K_\epsilon$ are valid. They span the simplicial
 subspace
 
-$$
+```math
 \mathcal H_{C_p}
 =\mathrm{span}\left\lbrace
 |\sigma\rangle \mid \sigma\in C_p(K_\epsilon)
@@ -327,21 +329,21 @@ $$
 \subseteq\mathcal H_p,
 \qquad
 \dim\mathcal H_{C_p}=|C_p(K_\epsilon)|.
-$$
+```
 
 
 ### Main idea of the quantum algorithm
 The goal is to estimate the dimension of the harmonic subspace,
-$\dim\ker L_p=\beta_p$. First, construct the uniform mixed state over the
+$`\dim\,\ker\,L_p=\beta_p`$. First, construct the uniform mixed state over the
 valid $p$-simplices:
 
-$$
+```math
 \rho_p
 =\frac{1}{|C_p|}
 \sum_{\sigma\in C_p}
 |\sigma\rangle\langle\sigma|
 =\frac{\Pi_{C_p}}{|C_p|},
-$$
+```
 
 where $\Pi_{C_p}$ is the projector onto $\mathcal H_{C_p}$. We then use QPE
 with the Hermitian $B_p$ or $B$. Measuring the phase register decomposes the state
@@ -351,17 +353,17 @@ harmonic subspace $\ker L_p$.
 If $\Pi_{\mathrm{harm},p}$ projects onto this subspace, the probability of a
 zero-phase result is
 
-$$
+```math
 \Pr(\phi=0)
 =\mathrm{Tr}(\Pi_{\mathrm{harm},p}\rho_p)
 =\frac{\beta_p}{|C_p|}.
-$$
+```
 
 Thus, from $N$ QPE measurements with $N_0$ zero-phase outcomes,
 
-$$
+```math
 \beta_p\approx|C_p|\frac{N_0}{N}.
-$$
+```
 
 ### Step one: Preparing the Simplex Mixture
 
@@ -370,63 +372,63 @@ We construct $\rho_p$ in three steps.
 1. **Prepare the Dicke state.** The circuit $A_p$ prepares the uniform
    Hamming-weight-$`p+1`$ state
 
-$$
+```math
 A_p|0\cdots0\rangle=|u_p\rangle
 =\frac{1}{\sqrt{\binom{n}{p+1}}}
 \sum_{|z|=p+1}|z\rangle.
-$$
+```
 
 
 
 2. **Amplify $|C_p\rangle$.** We want to prepare the state
 
-$$
+```math
 |C_p\rangle
 =\frac{1}{\sqrt{|C_p|}}
 \sum_{\sigma\in C_p}|\sigma\rangle,
-$$
+```
 
    however our current state decomposes as
 
-$$
+```math
 |u_p\rangle
 =\sqrt{\zeta}\,|C_p\rangle
 +\sqrt{1-\zeta}\,|C_p^\perp\rangle.
-$$
+```
 
    We need to use Grover-like amplitude amplification to increase $\zeta$.
    The reflections and amplification operator are
 
-$$
+```math
 R_{C_p}|z\rangle
 =(-1)^{\chi_{C_p}(z)}|z\rangle,
 \qquad
 R_{u_p}=2|u_p\rangle\langle u_p|-I,
 \qquad
 Q=R_{u_p}R_{C_p},
-$$
+```
 
    where $\chi_{C_p}(z)=1$ when $|z\rangle$ encodes a simplex in $C_p$, and
    is $0$ otherwise. We can implement one of the reflections as $R_{u_p} = A_p(2|0\rangle\langle 0|-I)A_p^\dagger$, for $R_{C_p}$ see the appendix.
 
    After $r$ iterations,
 
-$$
+```math
 Q^rA_p|0\cdots0\rangle\approx|C_p\rangle.
-$$
+```
 
    The initial good-state probability is $\zeta=\frac{|C_p|}{\binom{n}{p+1}}$, from which we estimate the number of iterations $r$.
 
 3. **Create the mixed state.** Introduce a reference register in $|0\rangle_R^{\otimes n}$
    and apply CNOTs:
 
-$$
+```math
 |C_p\rangle_S|0\rangle_R^{\otimes n}
 \longrightarrow
 |\Phi_p\rangle_{SR}
 =\frac{1}{\sqrt{|C_p|}}
 \sum_{\sigma\in C_p}|\sigma\rangle_S|\sigma\rangle_R.
-$$
+```
 
    Tracing out $R$ gives $\rho_p=\mathrm{Tr}_R(|\Phi_p\rangle\langle\Phi_p|)$.
 
@@ -449,36 +451,36 @@ We will block encode $B$ using the sparse oracles from the threshold adjacency m
    ancilla qubits. Here $\alpha=2^{\lceil\log_2 n\rceil}$.
    Writing these ancillas as $\mathrm{anc}$, the zero-ancilla block is
 
-$$
+```math
 (I_S\otimes\langle0|_{\mathrm{anc}})U_B
 (I_S\otimes|0\rangle_{\mathrm{anc}})=\frac{B}{\alpha}.
-$$
+```
 
    See the [appendix](#sparse-block-encoding-of-the-dirac-operator) for the detailed construction.
 
 2. **Construct the qubitization walk.** Our construction satisfies
    $U_B^2=I$. Reflecting about zero block ancillas gives
 
-$$
+```math
 W=(2P-I)U_B,
 \qquad P=I_S\otimes|0\rangle\langle0|_{\mathrm{anc}}.
-$$
+```
 
    For an eigenvalue $\lambda$ of $B$, the corresponding walk eigenvalues
    are $e^{\pm i\theta}$, where
 
-$$
+```math
 \cos\theta=\frac{\lambda}{\alpha}.
-$$
+```
 
 3. **Run QPE and count zero modes.** Apply QPE to $W$. A zero eigenvalue gives
    $\theta=\pi/2$, so the two QPE phases are $1/4$ and $3/4$.
    Since $B^2|_{C_p}=L_p$, these identify the harmonic $p$-chains.
    Ideally, the two phase probabilities satisfy
 
-$$
+```math
 P(\phi=1/4)+P(\phi=3/4)=\frac{\beta_p}{|C_p|}.
-$$
+```
 
 #### Pauli decomposition and Trotterization
 
@@ -488,40 +490,40 @@ Since we are not exploiting sparseness here, the code uses both $B_p$ and $L_p$.
    basis of valid $p$-simplices. QPE needs an operator on all $n$ qubits of the
    simplex register, so we embed it in the $2^n$-dimensional space:
 
-$$
+```math
 \widetilde L_{p,S}
 =\sum_{\sigma_i,\sigma_j\in C_p}
 (L_p)_{ij}|\sigma_i\rangle\langle\sigma_j|.
-$$
+```
 
 2. **Construct $U(t)$.** Decompose the embedded operator into Pauli strings,
 
-$$
+```math
 \widetilde L_{p,S}=\sum_\alpha c_\alpha P_\alpha,
 \qquad
 c_\alpha=\frac{1}{2^n}
 \mathrm{Tr}(\widetilde L_{p,S}P_\alpha),
 \qquad
 P_\alpha\in\lbrace I,X,Y,Z\rbrace^{\otimes n},
-$$
+```
 
    then construct its time evolution by Trotterization:
 
-$$
+```math
 U(t)=e^{-it\widetilde L_{p,S}}
 \approx
 (
 \prod_\alpha e^{-i(t/r)c_\alpha P_\alpha}
 )^r.
-$$
+```
 
 3. **Run QPE and count zero modes.** Apply QPE to $U(t)$ and measure the
    phase register. The harmonic states have eigenvalue $0$ and therefore give
    phase $0$. If $N_0$ of $N$ measurements give the all-zero phase,
 
-$$
+```math
 \beta_p\approx|C_p|\frac{N_0}{N}.
-$$
+```
 
 ### Resource estimates
 
@@ -532,21 +534,21 @@ We will give some broad comments on resources needed, for the qubitization appro
 The simplex and reference registers each use $n$ qubits. For AA, the Membership oracle needs $h\le n$ violation qubits and one membership qubit. After AA, these qubits are used for the qubitization walk's $r+1$ ancillas, where $r=\lceil\log_2 n\rceil$. QPE adds $q$ phase qubits, for $q$-bits of accuracy.
 Thus the total is $N_{\mathrm{qubits}}=2n+\max(h+1,r+1)+q$, or
 
-$$
+```math
 N_{\mathrm{qubits}}\le 3n+q+1.
-$$
+```
 
 The required QPE precision depends on the spectral gap of $B$. Zero modes correspond to phases $\phi_0=1/4$ and $3/4$. Let $\Delta=\min_{\lambda\ne0}|\lambda|$ be the smallest nonzero eigenvalue magnitude. For the closest nonzero eigenvalues $\lambda=\pm\Delta$, the separation from the nearest zero-mode phase is $\delta\phi=|\phi_0-\phi_\Delta|$, given by
 
-$$
+```math
 \delta\phi = \frac{\arcsin\left(\Delta/\alpha\right)}{2\pi} = \frac{\Delta}{2\pi\alpha} + O\left(\frac{\Delta}{\alpha}\right)^3.
-$$
+```
 
 We are mainly concerned with small $\Delta/\alpha$. For $q$ QPE qubits, the phase grid has spacing $2^{-q}$, so to have a fine enough grid to resolve the phase gap we need
 
-$$
+```math
 2^{-q} \leq \delta\phi\approx \frac{\Delta}{2\pi\alpha} \quad \Rightarrow\quad q\geq \log_2\left(\frac{2\pi\alpha}{\Delta}\right).
-$$
+```
 
 This estimates the resolution needed; tighter QPE error tolerances can require additional phase qubits.
 For our block encoding we have $\alpha = O(n)$. Imagine a family of pointclouds, as we add more data. For fixed QPE error tolerance, if $\Delta$ is constant or the gap closes polynomially $\Delta\sim n^{-k}$, then $q = O(\log n)$. If the gap closes exponentially in $n$, then $q$ must scale with $n$ or higher.
@@ -559,9 +561,9 @@ We count how often the main subroutines are called. This shows how the valid-sim
 
 2. **Run QPE.** Apply controlled powers $W,W^2,\ldots,W^{2^{q-1}}$. In our implementation, these powers are built by repeating the walk, giving
 
-$$
+```math
 1+2+\cdots+2^{q-1}=2^q-1
-$$
+```
 
    controlled walk calls per shot. The walk count grows exponentially in $q$, but is polynomial in $n$ when $q=O(\log n)$.
 
@@ -584,10 +586,10 @@ Repeating the circuit for $N$ measurements multiplies these counts by $N$. Thus 
 
 The Dirac operator $B$ only connects simplices that differ by one vertex. Thus $\langle\tau|B|\sigma\rangle$ can be nonzero only when $\tau=\sigma\oplus e_v$, where $e_v$ has a $1$ at position $v$ and zeros elsewhere. This adds vertex $v$ if $\sigma_v=0$ and removes it if $\sigma_v=1$. But even some of these components vanish, we can parametrize it as follows
 
-$$
+```math
 B_{\sigma\oplus e_v,\sigma}=\chi(\sigma,v)s(\sigma,v),
 \qquad s(\sigma,v)=(-1)^{\sum_{u\lt v}\sigma_u}.
-$$
+```
 
 Here $\chi=0, 1$ checks whether the transition $\sigma\rightarrow\sigma\oplus e_v$ is allowed, and $s=\pm 1$ gives its
 orientation. For block encoding we add ancilla registers to $S$, $|\sigma\rangle_S|v\rangle_V|a\rangle_a$:
@@ -606,12 +608,12 @@ Note: we assume the state $|\sigma\rangle$ is a valid simplex and only check $\s
 
 We will use two oracles: the position and the value oracles
 
-$$
+```math
 O_P|\sigma,v,a\rangle=|\sigma\oplus e_v,v,a\rangle,
 \qquad
 O_B|\sigma,v,a\rangle
 =s(\sigma,v)|\sigma,v,a\oplus\chi(\sigma,v)\rangle.
-$$
+```
 
 For unused vertex labels $v\geq n$, both oracles act as identity.
 
@@ -620,31 +622,31 @@ For unused vertex labels $v\geq n$, both oracles act as identity.
 Prepare the vertex register uniformly with Hadamards, then apply
 $`\mathrm{SELECT}_B`$ and undo the preparation:
 
-$$
+```math
 \mathrm{SELECT}_B=O_PX_aO_B,
-$$
+```
 
-For $v<n$, it act as
+For $v\lt n$, it act as
 
-$$
+```math
 \mathrm{SELECT}_B|\sigma,v,a\rangle
 =s(\sigma,v)\,|\sigma\oplus e_v,\, v,\, a\oplus 1\oplus\chi(\sigma,v)\rangle.
-$$
+```
 
 Thus allowed transitions have $a=0$, and disallowed transitions have
 $a=1$. The block encoding is then defined as
 
-$$
+```math
 U_B=H_V^{\otimes r}\,\mathrm{SELECT}_B\,H_V^{\otimes r}.
-$$
+```
 
 One can then readily check that
 
-$$
+```math
 U_B|\sigma,0,0\rangle_{SVa}
 =\left(\frac{B}{\alpha}|\sigma\rangle_S\right)|0,0\rangle_{Va} + |\perp\rangle_{SVa},
 \qquad \alpha=2^r = O(n).
-$$
+```
 
 Giving us the desired block encoding. Importantly, we have that $U_B^2=I$ which is useful for constructing the qubitization walk.
 
@@ -652,21 +654,21 @@ Giving us the desired block encoding. Importantly, we have that $U_B^2=I$ which 
 
 There is a nice way to interpret the above in terms of LCU's, clarifying the need of the two different ancilla registers $V$ and $a$. The Dirac operator can be written as $B = \sum_v B_v$ where
 
-$$
+```math
 B_v|\sigma\rangle = \chi(\sigma, v)s(\sigma, v)|\sigma\oplus e_v\rangle.
-$$
+```
 
 This makes $B$ look like a LCU, however $B_v$ is not unitary since $\chi$ can vanish. In order to make $B_v$ unitary, we can add the $|\cdot\rangle_a$ register and define
 
-$$
+```math
 U_v|\sigma, a\rangle_{Sa} = s(\sigma, v)\,|\sigma\oplus e_v,\,a\oplus 1\oplus\chi(\sigma, v)\rangle_{Sa}.
-$$
+```
 
 Which is a block encoding: ${}_a\langle 0|U_v|0\rangle_a = B_v$. This first step turns $B\rightarrow \sum_v U_v$ into an LCU. We can thus block encode this using the standard LCU construction, adding the $V$ register:
 
-$$
+```math
 U_B=\mathrm{PREPARE}_V^\dagger\cdot\mathrm{SELECT}_B\cdot\mathrm{PREPARE}_V,
-$$ 
+```
 
 where $\mathrm{PREPARE}_V = H^{\otimes r}_V$.
 
@@ -683,9 +685,9 @@ These are implemented by `flip_if` and `phase_if` in
 
 To obtain $\sigma\oplus e_v$, flip the $v$'th qubit in the S-register, $\sigma_v\rightarrow \sigma_v\oplus 1$, only when the vertex register is in the state $|v\rangle$. Thus
 
-$$
+```math
 O_P=\prod_{v=0}^{n-1}C_{V=v}X_{S_v}
-$$
+```
 
 ##### Value oracle $O_B$
 
@@ -696,88 +698,88 @@ computes $\chi$ in the flag $a$, while $O_s$ applies the sign as a phase.
 $\langle\sigma\oplus e_v|B|\sigma\rangle$ is nonzero.
 For each vertex $v$, define the vertices incompatible with it:
 
-$$
+```math
 F_v=\lbrace u\ne v \mid A_{vu}=0\rbrace.
-$$
+```
 
 For $\sigma\oplus e_v$ to be valid, assuming $\sigma$ is valid, we need
 $\sigma_u=0$ for every $u\in F_v$. This checks compatibility when adding
 $v$. However, when removing $v$ the condition already holds, since we assume $\sigma$ is valid. This gives us the first factor in
 
-$$
+```math
 \chi(\sigma,v)=
 \left[\prod_{u\in F_v}(1-\sigma_u)\right]
 \left[1-\prod_{u\ne v}(1-\sigma_u)\right].
-$$
+```
 
 The second factor requires at least one vertex besides $v$. This excludes the empty-simplex transition since $\partial_0=\partial_0^\dagger=0$.
 
 We can readily implement this in a circuit as
 
-$$
+```math
 O_\chi=\prod_{v=0}^{n-1}
 \left(C_{V=v,\,S_{F_v}=0}X_a\right)
 \left(C_{V=v,\,S_{\lbrace u \mid u\ne v\rbrace}=0}X_a\right),
-$$
+```
 
 where $S_T$ denotes the $S$-register qubits for vertices in $T$, so $S_T=0$ means $\sigma_v = 0$ for all $v\in T$.
 
 **Apply $s$.** The orientation is
 
-$$
+```math
 s(\sigma,v)=(-1)^{\sum_{u\lt v}\sigma_u}
 =\prod_{u\lt v}(-1)^{\sigma_u}.
-$$
+```
 
-For each $v$, apply $Z$ to every $S_u$ with $u<v$, controlled on $V=v$.
-Each occupied vertex $u<v$ contributes a minus sign
+For each $v$, apply $Z$ to every $S_u$ with $u\lt v$, controlled on $V=v$.
+Each occupied vertex $u\lt v$ contributes a minus sign
 
-$$
+```math
 O_s=\prod_{v=0}^{n-1}\prod_{u\lt v}C_{V=v}Z_{S_u}.
-$$
+```
 
 Combining the two parts gives, we get the value oracle
 
-$$
+```math
 O_B=O_sO_\chi.
-$$
+```
 
 ### Simplex membership oracle
 
 For amplitude amplification, we need a good state reflection circuit. So a unitary that reflects valid $p$-simplex states: $R_{C_p}|\sigma\rangle=(-1)^{\chi_{C_p}(\sigma)}|\sigma\rangle$. The Dicke state already restricts $\sigma$ to Hamming weight $p+1$. A Vietoris–Rips simplex is valid iff every pair of occupied vertices is an edge or equivalently iff it contains no invalid edge. Define the set of nonedges (invalid edges)
 
-$$
-\mathcal N=\lbrace(i,j) \mid i<j,\ A_{ij}=0\rbrace.
-$$
+```math
+\mathcal N=\lbrace(i,j) \mid i\lt j,\ A_{ij}=0\rbrace.
+```
 
 For a given $\sigma$, the condition $\sigma_i\land\sigma_j$ checks whether the $(i,j)$ edge is present or not. We must then make sure all non-edges are not present:
 
-$$
+```math
 \chi_{C_p}(\sigma)=\bigwedge_{(i,j)\in\mathcal N}
 \neg(\sigma_i\land\sigma_j).
-$$
+```
 
 We can compute this in a unitary circuit. For a given matrix $A$, we need $m=|\mathcal N|$ ancillas to check every non-edge condition $v_{ij}=\sigma_i\land\sigma_j$, and one ancilla to encode the result $\chi_{C_p}(\sigma)$:
 
-$$
+```math
 O_K|\sigma\rangle|0\rangle^{\otimes m}|b\rangle
 =|\sigma\rangle|0\rangle^{\otimes m}|b\oplus\chi_{C_p}(\sigma)\rangle.
-$$
+```
 
 The circuit thus (1) computes the $m$ violation bits, (2) checks that they are all $0$ and (3) uncomputes violation bits (see [simplex_reflection.py](qtda/simplex_reflection.py)). Finally, compute membership, apply $Z$ to $b$, and uncompute: $R_{C_p}=O_K^\dagger(I\otimes Z_b)O_K$.
 
 This approach gives us $m+1$ ancillas, which at worst can be $O(n^2)$. We can actually do better. For each $i=0, \cdots, n-1$, compute
 
-$$
+```math
 \mathcal N_i=\lbrace j \mid j>i,\ A_{ij}=0\rbrace.
-$$
+```
 
 If $\sigma_i=1$, then for all $j\in\mathcal N_i$ we must have $\sigma_j=0$ for a valid simplex. We can thus compute the membership indicator as
 
-$$
+```math
 t_i=\bigvee_{j\in\mathcal N_i}\sigma_i\land\sigma_j,
 \qquad
 \chi_{C_p}(\sigma)=\bigwedge_i\neg t_i.
-$$
+```
 
 This approach needs at most $n$ violation bits and one membership qubit, giving $O(n)$ ancillas
