@@ -4,15 +4,15 @@
 # Registers:    |sigma>_S |reference>_R |work>_anc |phase>_P
 #   S   : simplex register, n qubits
 #   R   : reference register, n qubits (copies S to mixed state)
-#   anc : shared work register, k = max(m + 1, r + 1) qubits
+#   anc : shared work register, k = max(h + 1, r + 1) qubits
 #   P   : QPE phase register, phase_bits qubits
 #
-#   n = number of points; m = number of nonedges; r = ceil(log2(n)).
+#   n = number of points; h = number of nonempty nonedge rows; r = ceil(log2(n)).
 #
 # The anc work register is used for AA then later qubitization walk.
 # During AA:
-#   anc[0:m] : m nonedge-violation qubits
-#   anc[m]   : membership qubit
+#   anc[0:h] : h row-violation qubits
+#   anc[h]   : membership qubit
 #
 # During the qubitization walk:
 #   anc[0:r] : vertex-label register V
@@ -66,13 +66,14 @@ def qtda_calculation(data, epsilon, p, phase_bits, shots=10000):
     A = threshold_graph(D, epsilon)
     num_simplices = count_simplices(A, p)
 
-    # One work qubit per nonedge, plus one membership qubit (for membership reflection R_G in AA)
-    num_nonedges = 0
+    # One work qubit per nonempty nonedge row, plus one membership qubit (for membership reflection R_G in AA)
+    num_nonedge_rows = 0
     for u in range(n):
         for v in range(u + 1, n):
             if not A[u, v]:
-                num_nonedges += 1
-    num_oracle_ancillas = num_nonedges + 1 # For AA
+                num_nonedge_rows += 1
+                break
+    num_oracle_ancillas = num_nonedge_rows + 1 # For AA
     
     # Qubitization walk ancillas: r vertex-label qubits and one value flag.
     r = ceil(log2(n))
@@ -96,7 +97,7 @@ def qtda_calculation(data, epsilon, p, phase_bits, shots=10000):
     reference_qubits = list(reference_register)                  # [R[0], R[1], ..., R[n - 1]]
     ancilla_qubits = list(ancilla_register)                      # [anc[0], anc[1], ..., anc[k - 1]]
 
-    # AA:   anc[0:m] checks nonedges; anc[m] stores membership (m = num_nonedges).
+    # AA:   anc[0:h] checks nonedge rows; anc[h] stores membership (h = num_nonedge_rows).
     # Walk: anc[0:r] stores the vertex label V; anc[r] is the value flag a.
 
     print("\n--- Quantum registers ---")
