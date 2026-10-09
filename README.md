@@ -6,7 +6,12 @@ This repository implements algorithms from classical and quantum topological dat
 Vietoris-Rips complex and the corresponding persistent homology, which give us the persistence
 barcode. We also compute Betti numbers using the combinatorial Hodge-Laplacian, for comparison with the quantum approach.
 
-**Quantum Topological Data Analysis:** We follow the main steps of the original [LGZ algorithm](https://arxiv.org/abs/1408.3106), using amplitude amplification to prepare simplex states and Quantum Phase Estimation to estimate Betti numbers. Our main implementation uses **sparse block encoding of the Dirac operator and a [qubitization walk](https://arxiv.org/abs/1610.06546)**, with oracles constructed from the threshold adjacency matrix. We also implement Trotterized evolution for testing and comparison. The circuits are implemented and simulated using [pytket](https://docs.quantinuum.com/tket/api-docs/).
+**Quantum Topological Data Analysis:** We implement two approaches:
+
+1. **LGZ approach:** We follow the main steps of the original [LGZ algorithm](https://arxiv.org/abs/1408.3106), using amplitude amplification to prepare simplex states and Quantum Phase Estimation to estimate Betti numbers. Our main implementation uses **sparse block encoding of the Dirac operator and a [qubitization walk](https://arxiv.org/abs/1610.06546)**, with oracles constructed from the threshold adjacency matrix. We also implement Trotterized evolution for testing and comparison.
+2. **QBNE-Power:** We estimate normalized Betti numbers using Monte Carlo sampling, following [Algorithm 6 of arXiv:2408.16934](https://arxiv.org/abs/2408.16934). The circuit estimates moments of the reflected Laplacian using a fermionic representation of the Dirac operator and block encodings of the projectors.
+
+The circuits are implemented and simulated using [pytket](https://docs.quantinuum.com/tket/api-docs/).
 
 All classical and quantum-algorithm components are implemented for clarity, not optimized in any way.
 
@@ -18,7 +23,7 @@ All classical and quantum-algorithm components are implemented for clarity, not 
   - [Persistent Homology](#persistent-homology)
   - [Combinatorial Hodge-Laplacian](#combinatorial-hodge-laplacian)
   - [Distance, threshold adjacency matrix and clique complex](#distance-threshold-adjacency-matrix-and-clique-complex)
-- [Quantum Topological Data Analysis](#quantum-topological-data-analysis)
+- [Quantum Topological Data Analysis (LGZ approach)](#quantum-topological-data-analysis-lgz-approach)
   - [Simplex Encoding](#simplex-encoding)
   - [Main idea of the quantum algorithm](#main-idea-of-the-quantum-algorithm)
   - [Step one: Preparing the Simplex Mixture](#step-one-preparing-the-simplex-mixture)
@@ -26,16 +31,23 @@ All classical and quantum-algorithm components are implemented for clarity, not 
     - [Sparse block encoding and Qubitization](#sparse-block-encoding-and-qubitization)
     - [Pauli decomposition and Trotterization](#pauli-decomposition-and-trotterization)
   - [Resource estimates](#resource-estimates)
+- [QBNE-Power](#qbne-power)
+  - [Main idea](#main-idea)
+  - [Estimating the moment](#estimating-the-moment)
+  - [Implementation and resources](#implementation-and-resources)
 - [Appendix](#appendix)
   - [Sparse block encoding of the Dirac operator](#sparse-block-encoding-of-the-dirac-operator)
   - [Simplex membership oracle](#simplex-membership-oracle)
+  - [QBNE-Power implementation](#qbne-power-implementation)
+    - [Projector block encodings](#projector-block-encodings)
+    - [Fermionic Dirac operator](#fermionic-dirac-operator)
 
 ## Running the examples
 
 Install the numerical, plotting, and pytket/Qiskit dependencies:
 
 ~~~bash
-python -m pip install numpy scipy matplotlib pytket-qiskit qiskit-aer
+python -m pip install numpy scipy matplotlib pytket-qiskit qiskit-aer tqdm
 ~~~
 
 Run the examples as modules from the repository root folder.
@@ -89,6 +101,26 @@ python -m scripts.qtda_betti_estimation_trotter
 
 # QTDA Betti-number estimate with amplitude amplification, sparse block encoding, and QPE on the qubitization walk
 python -m scripts.qtda_betti_estimation_qubitization
+~~~
+
+The QBNE-Power script estimates Betti numbers using Monte Carlo sampling and compares with the exact classical value:
+
+~~~bash
+python -m scripts.qbne_power_betti_estimation
+~~~
+
+Example output:
+
+~~~text
+--- Quantum registers ---
+S:       6 qubits  (simplex register)
+W:       4 qubits  (shared work register)
+a:       3 qubits  (flags a0, a1, a2)
+total:   13 qubits
+
+Tr(H^15)/|S_p| estimate = 0.293800
+beta_1         estimate = 2.056600
+beta_1                  = 2 (Exact value)
 ~~~
 
 ## Classical Topological Data Analysis
@@ -239,8 +271,8 @@ B=
  & \partial_1 &  &  &  \\
 \partial_1^\dagger &  & \partial_2 &  &  \\
  & \partial_2^\dagger &  & \ddots &  \\
- &  & \ddots &  & \partial_n \\
- &  &  & \partial_n^\dagger &
+ &  & \ddots &  & \partial_{n-1} \\
+ &  &  & \partial_{n-1}^\dagger &
 \end{pmatrix}.
 ```
 
@@ -288,7 +320,7 @@ for different values of $\epsilon$.
 
 For $n$ points in a fixed-dimensional space, $D^{\mathrm{dist}}$ and $A$ take $O(n^2)$ time to compute, with $O(n^2)$ storage for each matrix.
 
-## Quantum Topological Data Analysis
+## Quantum Topological Data Analysis (LGZ approach)
 
 ### Simplex Encoding
 
@@ -443,7 +475,7 @@ We next use QPE to identify the zero modes and estimate their probability, from 
 #### Sparse block encoding and Qubitization
 
 We will block encode the full Dirac operator $B=\partial+\partial^\dagger$.
-This operator only connects simplices $\langle\tau|\partial+\partial^\dagger|\sigma\rangle$ that differ by one vertex. So $B$ has at most $n$ nonzero entries per row or column: it is $O(n)$-sparse. Out of its $2^n\times 2^n=4^n$ component, at most $O(n2^n)$ elements are non-zero.
+This operator only connects simplices $\langle\tau|\partial+\partial^\dagger|\sigma\rangle$ that differ by one vertex. So $B$ has at most $n$ nonzero entries per row or column: it is $O(n)$-sparse. Out of its $2^n\times 2^n=4^n$ components, at most $O(n2^n)$ elements are non-zero.
 
 We will block encode $B$ using the sparse oracles from the threshold adjacency matrix $A$, which uses $O(n^2)$ storage, without constructing the full matrix $B$.
 
@@ -579,6 +611,117 @@ The main circuit calls per shot are therefore:
 
 Repeating the circuit for $N$ measurements multiplies these counts by $N$. Thus rare valid simplices increase the AA cost, while a smaller normalized spectral gap requires more QPE precision and more walk calls.
 
+## QBNE-Power
+
+We will briefly describe QBNE-Power, a quantum algorithm for estimating normalized Betti numbers using Monte Carlo sampling, following [Algorithm 6 of arXiv:2408.16934](https://arxiv.org/abs/2408.16934).
+
+### Main idea
+
+At a fixed scale $\epsilon$, define the reflected Laplacian $H=I-\frac{L_p}{n}$. The eigenvalues of $L_p$ satisfy $0\leq\lambda\leq n$. The idea is to estimate
+
+```math
+\mu_d^{(p)}
+=\frac{\mathrm{Tr}(H^d)}{|S_p|}
+=\frac{\beta_p}{|S_p|}
++\frac{1}{|S_p|}\sum_{\lambda>0}
+\left(1-\frac{\lambda}{n}\right)^d.
+```
+The contributions from positive eigenvalues decay as $d$ increases, thus
+
+```math
+\lim_{d\to\infty}\mu_d^{(p)}=\frac{\beta_p}{|S_p|}.
+```
+
+### Estimating the moment
+
+The trace is a sum of diagonal elements in the valid $p$-simplex basis:
+
+```math
+\mu_d^{(p)}
+=\frac{1}{|S_p|}\sum_{\sigma\in S_p}
+\langle\sigma|H^d|\sigma\rangle.
+```
+
+We estimate this average by sampling $\sigma$ uniformly from $S_p$ and preparing $|\sigma\rangle$, effectively preparing the mixed state $\rho_p=\frac{1}{|S_p|}\sum_{\sigma\in S_p}|\sigma\rangle\langle\sigma|$.
+
+The paper decomposes $H=D^\dagger D$ on the valid $p$-simplex subspace and uses a block encoding $U_D$:
+
+```math
+U_D|\sigma\rangle_S|0\rangle_{\mathrm{anc}}
+=\left(D|\sigma\rangle_S\right)|0\rangle_{\mathrm{anc}}
++|\perp\rangle,
+```
+Measuring the ancillas in this state, gives $\mathrm{anc}=0$ with probability
+
+```math
+\Pr(\mathrm{anc}=0\mid\sigma)
+=\|D|\sigma\rangle\|^2
+=\langle\sigma|D^\dagger D|\sigma\rangle
+=\langle\sigma|H|\sigma\rangle.
+```
+
+We call an all-zero ancilla outcome a success. If we apply $U_D$ and $U_D^\dagger$ alternately for $d$ steps, checking the ancillas after each application, the probability that all $d$ checks succeed is
+
+```math
+\Pr(\text{all }d\text{ checks succeed}\mid\sigma)
+=\langle\sigma|H^d|\sigma\rangle.
+```
+
+This gives a Monte Carlo algorithm for estimating $\mu_d^{(p)}$:
+
+1. Sample $\sigma\in S_p$ uniformly and prepare $|\sigma\rangle_S|0\rangle_{\mathrm{anc}}$.
+2. Apply $U_D,U_D^\dagger,U_D,\ldots$ for $d$ steps. Measure then reset the success flags after each application.
+3. Record $X_i=1$ if every check succeeds, and $X_i=0$ otherwise.
+4. Repeat for $N$ samples.
+
+Averaging over the sampled simplices
+
+```math
+\widehat\mu_d^{(p)}
+=\frac{1}{N}\sum_{i=1}^{N}X_i
+=\frac{N_{\mathrm{success}}}{N},
+```
+
+estimates $\mu_d^{(p)}$. For sufficiently large $d$, the positive-eigenvalue contributions are small, so this approximates $\beta_p/|S_p|$.
+
+For additive estimation error $\epsilon$ and failure probability $\eta$, the paper shows that choosing
+
+```math
+d\geq\frac{\log(2/\epsilon)}{\delta},
+\qquad
+N\geq\frac{2\log(2/\eta)}{\epsilon^2}
+```
+
+guarantees
+
+```math
+\Pr\!\left(
+\left|\widehat\mu_d^{(p)}-\frac{\beta_p}{|S_p|}\right|\leq\epsilon
+\right)\geq 1-\eta.
+```
+
+Here $\delta$ is a positive lower bound on the normalized spectral gap of $L_p$: $0\lt\delta\lt\min_{\lambda>0}\lambda/n$. Thus the estimate is within $\epsilon$ of the true normalized Betti number with probability at least $1-\eta$. Each sample uses $d$ checks, giving $Nd$ calls to $U_D$ or $U_D^\dagger$ ([Theorem 6.2](https://arxiv.org/abs/2408.16934)).
+
+### Implementation and resources
+
+We construct a block encoding $U_D$ of
+
+```math
+D=(I-P_K)\frac{\widetilde B}{\sqrt n}P_KP_p,
+```
+
+where $\widetilde B$ is the unrestricted Dirac operator, $P_K$ is the projector onto the Vietoris-Rips complex $K_\epsilon$, and $P_p$ projects onto states with Hamming weight $|\sigma|=p+1$. Our implementation uses the registers
+
+| Register | Meaning | Qubits |
+| --- | --- | --- |
+| $S$ | Simplex register | $n$ |
+| $W$ | Shared work register | $w=\max(s,h)$ |
+| $a$ | Three success flags $a_0,a_1,a_2$ | $3$ |
+
+The unitary $\widetilde B/\sqrt n$ acts only on the simplex register $S$. The block encodings of the projectors share the work register $W$, but each records its result in a separate bit of the $a$-register. A check succeeds when $a_0a_1a_2=000$. Here $s=\lceil\log_2(n+1)\rceil$ is the Hamming-weight counter size, and $h\leq n-1$ is the number of membership work qubits.
+
+See the [QBNE-Power implementation appendix](#qbne-power-implementation) for details of the projector block encodings and the fermionic Dirac circuit.
+
 ## Appendix
 
 ### Sparse block encoding of the Dirac operator
@@ -627,7 +770,7 @@ $`\mathrm{SELECT}_B`$ and undo the preparation:
 \mathrm{SELECT}_B=O_PX_aO_B,
 ```
 
-For $v\lt n$, it act as
+For $v\lt n$, it acts as
 
 ```math
 \mathrm{SELECT}_B|\sigma,v,a\rangle
@@ -739,7 +882,7 @@ Each occupied vertex $u\lt v$ contributes a minus sign
 O_s=\prod_{v=0}^{n-1}\prod_{u\lt v}C_{V=v}Z_{S_u}.
 ```
 
-Combining the two parts gives, we get the value oracle
+Combining the two parts, we get the value oracle
 
 ```math
 O_B=O_sO_\chi.
@@ -784,3 +927,112 @@ t_i=\bigvee_{j\in\mathcal N_i}\sigma_i\land\sigma_j,
 ```
 
 This approach needs at most $n$ violation bits and one membership qubit, giving $O(n)$ ancillas
+
+### QBNE-Power implementation
+
+#### Projector block encodings
+
+##### Membership projectors
+
+For $P_K$, we reuse our membership oracle $O_K$. The projectors $P_K$ and $I-P_K$ can then be block encoded as
+
+```math
+U_{P_K}=X_aO_K,
+\qquad
+U_{I-P_K}=O_K.
+```
+
+From the definition of $O_K$, one can check that
+
+```math
+{}_{Wa}\langle0,0|U_{P_K}|0,0\rangle_{Wa}=P_K,
+\qquad
+{}_{Wa}\langle0,0|U_{I-P_K}|0,0\rangle_{Wa}=I-P_K.
+```
+
+##### Hamming-weight projector
+
+We follow the Fourier counting approach described in [Appendix B of arXiv:2209.09371](https://arxiv.org/abs/2209.09371).
+
+The projector $P_p$ selects states with Hamming weight $|\sigma|=p+1$. First, we will construct a unitary
+
+```math
+U_{\mathrm{ham}}|\sigma\rangle_S|0\rangle_C
+=|\sigma\rangle_S\bigl||\sigma|\bigr\rangle_C.
+```
+
+that computes the Hamming weight in a counter register $C$ of size $s=\lceil\log_2(n+1)\rceil$.
+
+Define the gate $R|y\rangle_C=e^{2\pi i y/2^s}|y\rangle_C$. Then one can readily check that
+
+```math
+\mathrm{QFT}_C^\dagger\cdot R_C\cdot\mathrm{QFT}_C|c\rangle_C
+=|c+1\rangle_C.
+```
+
+So we can compute the Hamming weight of $|\sigma\rangle$ by applying controlled $R_C$ for every vertex:
+
+```math
+U_{\mathrm{ham}}
+=\mathrm{QFT}_C^\dagger\cdot
+\left(\prod_{v=0}^{n-1}C_{S_v=1}(R_C)\right)
+\cdot\mathrm{QFT}_C.
+```
+
+We can now block encode the projector
+
+```math
+U_{P_p}|\sigma\rangle_S|0\rangle_C|0\rangle_a
+=|\sigma\rangle_S|0\rangle_C
+|1\oplus\delta_{|\sigma|,p+1}\rangle_a.
+```
+
+Compute the weight, flip $a$ when $C=p+1$, and undo the counting. Finally, apply $X_a$ so that flag $0$ means success:
+
+```math
+U_{P_p}
+=X_aU_{\mathrm{ham}}^\dagger
+\left(C_{C=p+1}X_a\right)U_{\mathrm{ham}},
+```
+
+The Hamming-weight projector is implemented in [qbne/projectors.py](qbne/projectors.py), using [quantum_algorithms/hamming_weight.py](quantum_algorithms/hamming_weight.py) for $U_{\mathrm{ham}}$.
+
+#### Fermionic Dirac operator
+
+We follow the fermionic representation and circuit construction in [arXiv:2201.11510](https://arxiv.org/abs/2201.11510v2). The unrestricted Dirac operator can be written in terms of fermionic annihilation and creation operators:
+
+```math
+\widetilde B=\sum_{v=0}^{n-1}(f_v+f_v^\dagger)
+=\sum_{v=0}^{n-1}C_v.
+```
+
+Using the Jordan–Wigner representation,
+
+```math
+f_v=Z_0\cdots Z_{v-1}\frac{X_v+iY_v}{2},
+\qquad
+C_v=f_v+f_v^\dagger=Z_0\cdots Z_{v-1}X_v.
+```
+
+Note that $C_0=X_0$.
+
+The operators $C_v$ are Hermitian, square to $I$ and pairwise anticommute. Thus $\widetilde B$ is Hermitian and $\widetilde B^2=nI$, so $\widetilde B/\sqrt n$ is Hermitian and unitary.
+
+We implement it using
+
+```math
+\frac{\widetilde B}{\sqrt n}=R^\dagger X_0R,
+\qquad
+R=R_0(\theta_0)\cdots R_{n-2}(\theta_{n-2}),
+```
+
+where
+
+```math
+R_v(\theta_v)=e^{\theta_v C_vC_{v+1}/2}
+=e^{-i\theta_v Y_vX_{v+1}/2},
+\qquad
+\theta_v=\arctan\!\left(\sqrt{n-v-1}\right).
+```
+
+To construct $R$, apply $R_{n-2}$ first and $R_0$ last. The full circuit applies $R$, then $X_0$, then $R^\dagger$, acting only on $S$. This is implemented in [qbne/dirac.py](qbne/dirac.py).
