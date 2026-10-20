@@ -6,10 +6,11 @@ This repository implements algorithms from classical and quantum topological dat
 Vietoris-Rips complex and the corresponding persistent homology, which give us the persistence
 barcode. We also compute Betti numbers using the combinatorial Hodge-Laplacian, for comparison with the quantum approach.
 
-**Quantum Topological Data Analysis:** We implement two approaches:
+**Quantum Topological Data Analysis:** We implement three approaches:
 
 1. **LGZ approach:** We follow the main steps of the original [LGZ algorithm](https://arxiv.org/abs/1408.3106), using amplitude amplification to prepare simplex states and Quantum Phase Estimation to estimate Betti numbers. Our main implementation uses **sparse block encoding of the Dirac operator and a [qubitization walk](https://arxiv.org/abs/1610.06546)**, with oracles constructed from the threshold adjacency matrix. We also implement Trotterized evolution for testing and comparison.
 2. **QBNE-Power:** We estimate normalized Betti numbers using Monte Carlo sampling, following [Algorithm 6 of arXiv:2408.16934](https://arxiv.org/abs/2408.16934). The circuit estimates moments of the reflected Laplacian using a fermionic representation of the Dirac operator and block encodings of the projectors.
+3. **QSVT and Monte Carlo appraoch**: Inspired by QBNE-Power, we propose a different algorithm based on filtering unwanted singular values using QSVT. This approach has a slighlty better query complexity than QBNE-Power. We also propose a repreated filtering version to reduce query complexity and coherence requirements further. We provide error and complexity analysis of this algorithm.
 
 The circuits are implemented and simulated using [pytket](https://docs.quantinuum.com/tket/api-docs/).
 
@@ -35,6 +36,10 @@ All classical and quantum-algorithm components are implemented for clarity, not 
   - [Main idea](#main-idea)
   - [Estimating the moment](#estimating-the-moment)
   - [Implementation and resources](#implementation-and-resources)
+- [Betti estimation using QSVT and Monte Carlo](#betti-estimation-using-qsvt-and-monte-carlo)
+  - [Main idea](#main-idea-1)
+  - [Error analysis and complexity](#error-analysis-and-complexity)
+  - [Repeated filtering](#repeated-filtering)
 - [Appendix](#appendix)
   - [Sparse block encoding of the Dirac operator](#sparse-block-encoding-of-the-dirac-operator)
   - [Simplex membership oracle](#simplex-membership-oracle)
@@ -47,7 +52,7 @@ All classical and quantum-algorithm components are implemented for clarity, not 
 Install the numerical, plotting, and pytket/Qiskit dependencies:
 
 ~~~bash
-python -m pip install numpy scipy matplotlib pytket-qiskit qiskit-aer tqdm
+python -m pip install numpy scipy matplotlib pytket-qiskit qiskit-aer tqdm pyqsp
 ~~~
 
 Run the examples as modules from the repository root folder.
@@ -103,7 +108,7 @@ python -m scripts.qtda_betti_estimation_trotter
 python -m scripts.qtda_betti_estimation_qubitization
 ~~~
 
-The QBNE-Power script estimates Betti numbers using Monte Carlo sampling and compares with the exact classical value:
+The QBNE-Power script estimates Betti numbers using Monte Carlo sampling:
 
 ~~~bash
 python -m scripts.qbne_power_betti_estimation
@@ -121,6 +126,12 @@ total:   13 qubits
 Tr(H^15)/|S_p| estimate = 0.293800
 beta_1         estimate = 2.056600
 beta_1                  = 2 (Exact value)
+~~~
+
+The QSVT script estimates Betti numbers using singular-value filtering and Monte Carlo sampling, and compares with the exact classical value:
+
+~~~bash
+python -m scripts.qsvt_D_betti_estimation
 ~~~
 
 ## Classical Topological Data Analysis
@@ -700,7 +711,7 @@ guarantees
 \right)\geq 1-\eta.
 ```
 
-Here $\delta$ is a positive lower bound on the normalized spectral gap of $L_p$: $0\lt\delta\lt\min_{\lambda>0}\lambda/n$. Thus the estimate is within $\epsilon$ of the true normalized Betti number with probability at least $1-\eta$. Each sample uses $d$ checks, giving $Nd$ calls to $U_D$ or $U_D^\dagger$ ([Theorem 6.2](https://arxiv.org/abs/2408.16934)).
+Here $\delta$ is a positive lower bound on the normalized spectral gap of $L_p$: $0\lt\delta\lt\min_{\lambda>0}\lambda/n$. Thus the estimate is within $\epsilon$ of the true normalized Betti number with probability at least $1-\eta$. Each sample uses $d$ checks, giving at most $Nd$ calls to $U_D$ or $U_D^\dagger$ ([Theorem 6.2](https://arxiv.org/abs/2408.16934)).
 
 ### Implementation and resources
 
@@ -721,6 +732,173 @@ where $\widetilde B$ is the unrestricted Dirac operator, $P_K$ is the projector 
 The unitary $\widetilde B/\sqrt n$ acts only on the simplex register $S$. The block encodings of the projectors share the work register $W$, but each records its result in a separate bit of the $a$-register. A check succeeds when $a_0a_1a_2=000$. Here $s=\lceil\log_2(n+1)\rceil$ is the Hamming-weight counter size, and $h\leq n-1$ is the number of membership work qubits.
 
 See the [QBNE-Power implementation appendix](#qbne-power-implementation) for details of the projector block encodings and the fermionic Dirac circuit.
+
+## Betti estimation using QSVT and Monte Carlo
+
+### Main idea
+
+We will here propose a different algorithm, inspired by QBNE-Power and QBNE-Chebyshev from the same paper, that uses Quantum Singular Value Transformation (QSVT). This algorithm has similar complexity as QBNE-Power, with a slightly better query complexity, though it might require a bit more coherence. We also propose a repeated filtering version, that potentially improves further on query complexity and coherence requirements. 
+
+Recall the operator $D$ from QBNE-Power, satisfying $D^\dagger D=I-\frac{L_p}{n}$. For each eigenvalue $\lambda_j$ of $L_p$, we have $D$ singular value $s_j=\sqrt{1-\frac{\lambda_j}{n}}$. Thus the $\beta_p$ zero modes of $L_p$ correspond to singular values $s_j=1$, while all other singular values are $s\leq \sqrt{1-\delta}$ where $0\lt\delta\lt\min_{\lambda>0}\lambda/n$.
+
+We can therefore use QSVT with a filter polynomial, to supress all the unwanted singular values. Consider a polynomial $F(s)$ such that
+
+```math
+F(1)=1 \qquad \text{and}\qquad |F(s)|\leq\epsilon_F, \quad s\in[0,\sqrt{1-\delta}].
+```
+
+For a degree-$`d`$ filter, QSVT combines $d$ calls to $U_D$ or $U_D^\dagger$:
+
+```math
+V_{\vec{\theta}}
+=S_\Pi(\theta_0)
+\prod_{k=1}^{d}\left[i\,U^{(k)}S_\Pi(\theta_k)\right],
+\qquad
+S_\Pi(\theta)=e^{i\theta(2\Pi-I)} = e^{i\theta}\Pi + e^{-i\theta}(I-\Pi).
+```
+
+Here $\Pi$ projects onto the all-zero success flags, and $U^{(k)}$ alternates between $U_D$ and $U_D^\dagger$. For a given polynomian $F(s)$, the $\vec\theta$ phases can be found using the library [pyqsp](https://github.com/ichuang/pyqsp).
+
+Applying QSVT using $U_D$, we can perform a singular value transformation on $D$:
+
+```math
+D=\sum_j s_j|u_j\rangle\langle v_j|,
+\qquad
+K=F^{\mathrm{SV}}(D)=\sum_j F(s_j)|u_j\rangle\langle v_j|,
+```
+which supresses the non-Betti singular values. We can thus estimate
+
+```math
+\rho^{(F)}_p = \frac{\mathrm{Tr}_{\mathcal C_p}(K^\dagger K)}{|S_p|}
+=\frac{\beta_p}{|S_p|}
++\frac{1}{|S_p|}\sum_{j:\lambda_j>0}|F(s_j)|^2.
+```
+
+This is equal to the normalized Betti number up to filtering error
+
+```math
+0\leq\rho_p^{(F)}-\rho_p\leq(1-\rho_p)\epsilon_F^2\leq\epsilon_F^2,
+```
+where $\rho_p = \frac{\beta_p}{|S_p|}$.
+
+We can estimate $\rho_p^{(F)}$ similar to QBNE-Power: uniformly sample a simplex $\sigma_i\in S_p$, prepare $|\sigma_i\rangle_S|0\rangle_{\mathrm{anc}}$, apply QSVT $V_{\vec\theta}$, and measure the success flags. Record $X_i=1$ if all three flags are zero, otherwise record $X_i=0$. Repeating this independently $N$ times gives
+
+```math
+\widehat\rho_p=\frac{1}{N}\sum_{i=1}^{N}X_i
+=\frac{N_{\mathrm{success}}}{N},
+```
+
+which estimates $\rho_p^{(F)}$ and approximates $\rho_p$ when the filtering error is small.
+
+### Error analysis and complexity
+
+The analysis follows similar logic and steps as in [arXiv:2408.16934](https://arxiv.org/abs/2408.16934). For the filter we use a small modification of the CBNE-Chebyshev filter in Lemma 5.4 of the paper, adapted to the singular values of $D$:
+
+```math
+F(s)=\frac{T_d(s/b)}{T_d(1/b)},
+\qquad b=\sqrt{1-\delta}.
+```
+
+Here $T_d$ is the Chebyshev polynomial of the first kind, defined as $T_d(x) = \cos(d \cos^{-1}(x))$ for $|x|\leq 1$ and $T_d(x) = \cosh(d \cosh^{-1}(x))$ for $x\geq 1$. We find that choosing a power such that
+
+```math
+d\geq\frac{\log(2/\epsilon_F)}{\cosh^{-1}(1/b)} \qquad \text{or}\qquad d\geq\frac{\log(2/\epsilon_F)}{\sqrt{\delta}},
+```
+
+guarantees the required filtering error $|F(s)|\leq\epsilon_F$ on the unwanted interval. In the second inequality we used $\cosh^{-1}(\frac {1}{\sqrt{1-\delta}}) = \tanh^{-1}(\sqrt{\delta}) \geq \sqrt{\delta}$ which gives a looser bound that is comparable to the one used in the paper.
+
+Let $\epsilon_S>0$ be the allowed sampling error and $0<\eta<1$ the allowed probability of missing that accuracy. The independent success bits $X_i$ have mean $\rho_p^{(F)}$. Hoeffding's inequality gives
+
+```math
+\Pr\!\left(|\widehat\rho_p-\rho_p^{(F)}|>\epsilon_S\right)
+\leq 2e^{-2N\epsilon_S^2} \leq \eta,
+```
+which gives use the following bound on the number of samples 
+
+```math
+N\geq \frac{\log(2/\eta)}{2\epsilon_S^2}.
+```
+
+Combining sampling and filtering errors, in the ideal circuit model, we find
+
+```math
+\Pr\!\Big(|\widehat\rho_p-\rho_p|\leq \epsilon\Big)\geq 1-\eta, \qquad \epsilon = \epsilon_S+\epsilon_F^2.
+
+```
+
+Each sample uses $d$ queries to $U_D$ or $U_D^\dagger$. With the choices above, we find the following query complexity
+
+```math
+Q=Nd=O\!\left(
+\frac{\log(2/\eta)\log(2/\epsilon_F)}{\epsilon_S^2\sqrt\delta}
+\right).
+```
+
+To compare with the paper, we choose sampling and filtering errors $\epsilon_S=\epsilon_F^2=\epsilon/2$. Keeping $\eta$ fixed, we can compare to table 1 the paper:
+
+| Algorithm | Polynomial degree $d$ | Sample complexity | Query complexity |
+| --- | --- | --- | --- |
+| QBNE-Chebyshev (Alg. 3) | $O\left(\frac{\log(1/\epsilon)}{\sqrt{\delta}}\right)$ | $O\left(d^2\cdot 2^{10d}\right)$ | $O\left(d^3\cdot 2^{10d}\right)$ |
+| QBNE-Power (Alg. 6) | $O\left(\frac{\log(1/\epsilon)}{\delta}\right)$ | $O\left(\frac{1}{\epsilon^2}\right)$ | $O\left(\frac{d}{\epsilon^2}\right)$ |
+| QSVT approach | $O\left(\frac{\log(1/\epsilon)}{\sqrt{\delta}}\right)$ | $O\left(\frac{1}{\epsilon^2}\right)$ | $O\left(\frac{d}{\epsilon^2}\right)$ |
+
+The QSVT approach retains QBNE-Power's sample scaling while improving the degree dependence on the gap from $1/\delta$ to $1/\sqrt\delta$.
+
+### Repeated filtering
+The QBNE-Power approach can potentially use fewer queries, since a failure measurement can result in an early stop. Furthermore, the QSVT approach requires coherence between the success and failure branches across all queries, while QBNE-Power measures the success flags after each query.
+
+We can modify our algorithm, to improve on these. Instead of applying the filter $F$, we can apply a weaker filter $G(s) = \frac{T_\ell(s/b)}{T_\ell(1/b)}$ of lower degree $\ell<d$
+
+```math
+G(1)=1 \qquad \text{and}\qquad |G(s)|\leq\epsilon_G, \quad s\in[0,\sqrt{1-\delta}],
+```
+$r$ times. If after one QSVT filtering stage we get $K_G = G^{\mathrm{SV}}(D)$, we want to estimate
+
+```math
+\rho^{(G, r)}_p = \frac{\mathrm{Tr}_{\mathcal C_p}\left(\left[K_G^\dagger K_G\right]^r\right)}{|S_p|}
+=\frac{\beta_p}{|S_p|}
++\frac{1}{|S_p|}\sum_{j:\lambda_j>0}|G(s_j)|^{2r}.
+```
+
+We can again compute this using a monte carlo sampling approach. Let the QSVT circuit for G be $V_G$. Sample a $\sigma\in S_p$, then apply $V_G$ and $V_G^\dagger$, alternatingly, $r$ times and measure the ancilla flags between each application. If all $r$ measurements were sucessful, record $X_i=1$, while for an unsucessful measurement stop early and record $X_i=0$. We then have the estimate $\hat\rho_p = \frac 1N \sum_{i=1}^N X_i$. 
+
+The filtering error after $r$ stages satisfies
+
+```math
+0\leq\rho_p^{(G,r)}-\rho_p\leq\epsilon_G^{2r}.
+```
+
+We can match the filtering accuracy of $F$ by choosing
+
+```math
+\epsilon_G^{2r}\leq\epsilon_F^2 \qquad
+\Rightarrow\qquad 
+r\geq\frac{\log(1/\epsilon_F)}{\log(1/\epsilon_G)}.
+```
+
+With the same sampling bound $N\geq\log(2/\eta)/(2\epsilon_S^2)$, the full error guarantee is
+
+```math
+\Pr\!\left(|\widehat\rho_p-\rho_p|\leq\epsilon\right)\geq1-\eta,
+\qquad
+\epsilon=\epsilon_S+\epsilon_G^{2r}\leq\epsilon_S+\epsilon_F^2.
+```
+
+Each stage uses $\ell$ queries and each sample executes at most $r$ stages, giving
+
+```math
+Q_{\max}=Nr\ell =O\!\left(
+\frac{\log(2/\eta)\log(1/\epsilon_F)\log(2/\epsilon_G)}
+{\epsilon_S^2\sqrt\delta\,\log(1/\epsilon_G)}
+\right).
+```
+
+Each simplex state $|\sigma\rangle = |\sigma_{\text{Betti}}\rangle + |\sigma_{\text{other}}\rangle$, generally contains Betti and non-Betti components. The filter suppresses the non-Betti components. Averaged over uniformly sampled simplices, the Betti component has probability weight $\rho_p = \frac{\beta_p}{|S_p|}$. When this is small, most of the input weight is suppressed by the filter, making early rejection more likely.
+
+In the most favorable case where only a constant number of QSVT stages are executed on average before rejection or completion, the aberage query cost is  $O(N\ell)$. For fixed $\epsilon_G$, this can save a factor of $\log(1/\epsilon_F)$ queries compared with the single-filter approach. Therefore, this gives a logarithmic saving in the best case scenario.
+
+Furthermore, it only requires coherence between the failure and success branches over $\ell$ queries, rather than the whole circuit (the data register needs to remain coherent throughout the computation in all the algorithms).
+
 
 ## Appendix
 
